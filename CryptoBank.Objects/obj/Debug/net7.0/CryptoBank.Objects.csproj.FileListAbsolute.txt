@@ -1,0 +1,12 @@
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\bin\Debug\net7.0\CryptoBank.Objects.deps.json
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\bin\Debug\net7.0\CryptoBank.Objects.dll
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\bin\Debug\net7.0\CryptoBank.Objects.pdb
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\CryptoBank.Objects.csproj.AssemblyReference.cache
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\CryptoBank.Objects.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\CryptoBank.Objects.AssemblyInfoInputs.cache
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\CryptoBank.Objects.AssemblyInfo.cs
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\CryptoBank.Objects.csproj.CoreCompileInputs.cache
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\CryptoBank.Objects.dll
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\refint\CryptoBank.Objects.dll
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\CryptoBank.Objects.pdb
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Objects\obj\Debug\net7.0\ref\CryptoBank.Objects.dll

@@ -1,0 +1,17 @@
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\bin\Debug\net7.0\CryptoBank.Handlers.deps.json
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\bin\Debug\net7.0\CryptoBank.Handlers.dll
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\bin\Debug\net7.0\CryptoBank.Handlers.pdb
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\bin\Debug\net7.0\CryptoBank.Objects.dll
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\bin\Debug\net7.0\CryptoBank.Options.dll
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\bin\Debug\net7.0\CryptoBank.Objects.pdb
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\bin\Debug\net7.0\CryptoBank.Options.pdb
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\CryptoBank.Handlers.csproj.AssemblyReference.cache
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\CryptoBank.Handlers.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\CryptoBank.Handlers.AssemblyInfoInputs.cache
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\CryptoBank.Handlers.AssemblyInfo.cs
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\CryptoBank.Handlers.csproj.CoreCompileInputs.cache
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\CryptoBank.Handlers.csproj.CopyComplete
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\CryptoBank.Handlers.dll
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\refint\CryptoBank.Handlers.dll
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\CryptoBank.Handlers.pdb
+C:\Users\user\source\repos\CryptoBank\CryptoBank.Handlers\obj\Debug\net7.0\ref\CryptoBank.Handlers.dll
