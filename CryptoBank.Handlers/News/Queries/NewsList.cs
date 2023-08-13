@@ -4,39 +4,41 @@ using CryptoBank.Options;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CryptoBank.Handlers.News.Queries
-{
-    public class NewsList
-    {
-        public record Query : IRequest<Result>;
+namespace CryptoBank.Handlers.News.Queries;
 
-        public class Result
+public class NewsList
+{
+    public record Query : IRequest<Result>;
+
+    public class Result
+    {
+        public IEnumerable<New> Entries { get; set; }
+    }
+
+    public class Handler : IRequestHandler<Query, Result>
+    {
+        private readonly DbContext _context;
+        private readonly int _maxCount;
+        public Handler(DbContext context, IOptions<NewsOptions> options)
         {
-            public IQueryable<New> Entries { get; set; }
+            _context = context;
+            _maxCount = options.Value.MaxCount;
         }
 
-        public class Handler : DbContextBase, IRequestHandler<Query, Result>
+        public async Task<Result> Handle(Query request, CancellationToken cancellationToken)
         {
-            private readonly int _maxCount;
-            public Handler(DbContext dbContext, IOptions<NewsOptions> options) : base(dbContext)
-            {
-                _maxCount = options.Value.MaxCount;
-            }
+            var entity = await _context.Set<New>()
+                .AsNoTracking()
+                .OrderByDescending(x => x.Date)
+                .Take(_maxCount)
+                .ToListAsync(cancellationToken);
 
-            public Task<Result> Handle(Query request, CancellationToken cancellationToken)
-            {
-                var entity = DbContext.Set<New>()
-                    .AsNoTracking()
-                    .OrderByDescending(x => x.Date)
-                    .Take(_maxCount)                
-                    .AsQueryable();
-
-                return Task.FromResult(new Result { Entries = entity });
-            }
+            return new Result { Entries = entity };
         }
     }
 }
