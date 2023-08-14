@@ -2,22 +2,21 @@
 
 using Microsoft.EntityFrameworkCore;
 
-namespace CryptoBank.Database
+namespace CryptoBank.Database;
+
+public class Context : DbContext
 {
-    public class Context : DbContext
+    public Context(DbContextOptions<Context> options) : base(options)
     {
-        public Context(DbContextOptions<Context> options) : base(options)
-        {
 
-        }
+    }
 
-        public DbSet<New> News { get; set; }
+    public DbSet<New> News { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.HasDefaultSchema("public");
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasDefaultSchema("public");
 
-            modelBuilder.ApplyConfigurationsFromAssembly(GetType().Assembly);
-        }
+        modelBuilder.ApplyConfigurationsFromAssembly(GetType().Assembly);
     }
 }

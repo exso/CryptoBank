@@ -1,7 +1,6 @@
-﻿namespace CryptoBank.Options
+﻿namespace CryptoBank.Options;
+
+public class NewsOptions
 {
-    public class NewsOptions
-    {
-        public int MaxCount { get; set; }
-    }
+    public int MaxCount { get; set; }
 }
