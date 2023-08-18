@@ -5,14 +5,6 @@ VisualStudioVersion = 17.6.33829.357
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBank", "CryptoBank\CryptoBank.csproj", "{EF776C36-5C48-449B-8F6A-60A01E8CF01F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBank.Objects", "CryptoBank.Objects\CryptoBank.Objects.csproj", "{DF6CE039-174A-4171-8AD3-110DD25C30D9}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBank.Handlers", "CryptoBank.Handlers\CryptoBank.Handlers.csproj", "{07373171-9D13-4EF9-BFB8-61F323FAE91F}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBank.Options", "CryptoBank.Options\CryptoBank.Options.csproj", "{27F11766-457A-48C8-906A-6BE59FBE0D27}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoBank.Database", "CryptoBank.Database\CryptoBank.Database.csproj", "{27A55AAE-FD08-4739-A5BB-11A6BAADBE9B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,22 +15,6 @@ Global
 		{EF776C36-5C48-449B-8F6A-60A01E8CF01F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF776C36-5C48-449B-8F6A-60A01E8CF01F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF776C36-5C48-449B-8F6A-60A01E8CF01F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DF6CE039-174A-4171-8AD3-110DD25C30D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DF6CE039-174A-4171-8AD3-110DD25C30D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DF6CE039-174A-4171-8AD3-110DD25C30D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DF6CE039-174A-4171-8AD3-110DD25C30D9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{07373171-9D13-4EF9-BFB8-61F323FAE91F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{07373171-9D13-4EF9-BFB8-61F323FAE91F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{07373171-9D13-4EF9-BFB8-61F323FAE91F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{07373171-9D13-4EF9-BFB8-61F323FAE91F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{27F11766-457A-48C8-906A-6BE59FBE0D27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{27F11766-457A-48C8-906A-6BE59FBE0D27}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{27F11766-457A-48C8-906A-6BE59FBE0D27}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{27F11766-457A-48C8-906A-6BE59FBE0D27}.Release|Any CPU.Build.0 = Release|Any CPU
-		{27A55AAE-FD08-4739-A5BB-11A6BAADBE9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{27A55AAE-FD08-4739-A5BB-11A6BAADBE9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{27A55AAE-FD08-4739-A5BB-11A6BAADBE9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{27A55AAE-FD08-4739-A5BB-11A6BAADBE9B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

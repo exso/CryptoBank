@@ -1,30 +1,45 @@
 ﻿using CryptoBank.Database;
-using CryptoBank.Options;
-
+using CryptoBank.Features.News.Registration;
+using CryptoBank.Pipeline;
+using CryptoBank.Pipeline.Behaviors;
+using FastEndpoints;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
-var configuration = builder.Configuration;
 
-builder.Services.AddControllers();
-builder.Services.AddDbContext<DbContext, Context>(options => options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")
-    ?? throw new ArgumentNullException("DefaultConnection", "Please provide valid connection string")));
+builder.Services.AddDbContext<Context>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddMediatR(a => a.RegisterServicesFromAssemblies(new[] {
-    typeof(Program).Assembly,
-    typeof(CryptoBank.Handlers.News.Queries.NewsList.Handler).Assembly
-}));
+builder.Services.AddMediatR(cfg => cfg
+    .RegisterServicesFromAssembly(Assembly.GetExecutingAssembly())
+    // Can be merged if necessary
+    .AddOpenBehavior(typeof(LoggingBehavior<,>))
+    //.AddOpenBehavior(typeof(MetricsBehavior<,>))
+    //.AddOpenBehavior(typeof(TracingBehavior<,>))
+    .AddOpenBehavior(typeof(ValidationBehavior<,>)));
 
-builder.Services.Configure<NewsOptions>(configuration.GetSection("LatestNews"));
+builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+builder.Services.AddSingleton<Dispatcher>();
+
+builder.Services.AddFastEndpoints();
+
+// Features
+builder.AddNews();
 
 var app = builder.Build();
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+//Telemetry.Init("Vertical");
 
-await using var scope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
-var context = scope.ServiceProvider.GetRequiredService<Context>();
-await context.Database.MigrateAsync();
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+//app.MapMetrics();
+
+app.MapFastEndpoints();
 
 app.Run();
