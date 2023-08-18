@@ -7,7 +7,9 @@ namespace CryptoBank.Database;
 public class Context : DbContext
 {
     public DbSet<New> News { get; set; }
-    public DbSet<User> Users { get; set; }
+    public DbSet<User> Users { get; set; }  
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<UserRole> UserRoles { get; set; }
 
     public Context(DbContextOptions<Context> options) : base(options)
     {
