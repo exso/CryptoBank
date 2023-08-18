@@ -1,5 +1,4 @@
-﻿using CryptoBank.Objects.News;
-
+﻿using CryptoBank.Features.News.Domain;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,4 +1,4 @@
-﻿namespace CryptoBank.Options;
+﻿namespace CryptoBank.Features.News.Options;
 
 public class NewsOptions
 {

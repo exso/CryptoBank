@@ -1,8 +1,6 @@
-﻿using System;
+﻿namespace CryptoBank.Features.News.Models;
 
-namespace CryptoBank.Objects.News;
-
-public class New
+public class NewModel
 {
     public int Id { get; set; }
     public string Title { get; set; }

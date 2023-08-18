@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace CryptoBank.Database.Migrations
+namespace CryptoBank.Migrations
 {
     [DbContext(typeof(Context))]
     [Migration("20230810102539_Initial")]

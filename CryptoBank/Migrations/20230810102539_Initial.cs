@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace CryptoBank.Database.Migrations
+namespace CryptoBank.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration
