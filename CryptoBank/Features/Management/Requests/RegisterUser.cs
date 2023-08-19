@@ -9,6 +9,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Net;
 
 namespace CryptoBank.Features.Management.Requests;
 
@@ -16,7 +17,7 @@ public static class RegisterUser
 {
     [HttpPost("/register/user")]
     [AllowAnonymous]
-    public class Endpoint : Endpoint<Request, UserModel[]>
+    public class Endpoint : Endpoint<Request, HttpStatusCode>
     {
         private readonly Dispatcher _dispatcher;
         public Endpoint(Dispatcher dispatcher)
@@ -24,7 +25,7 @@ public static class RegisterUser
             _dispatcher = dispatcher;
         }
 
-        public override async Task<UserModel[]> ExecuteAsync(Request request, CancellationToken cancellationToken) =>
+        public override async Task<HttpStatusCode> ExecuteAsync(Request request, CancellationToken cancellationToken) =>
              await _dispatcher.Dispatch(request, cancellationToken);
     }
 
@@ -33,69 +34,119 @@ public static class RegisterUser
         string Email,
         string Password,
         DateTime DateOfBirth,
-        DateTime DateOfRegistration,
-        List<int> UserRoles) : IRequest<UserModel[]>;
+        DateTime DateOfRegistration) : IRequest<HttpStatusCode>;
 
     public class RequestValidator : AbstractValidator<Request>
     {
-        public RequestValidator()
+        public RequestValidator(Context context)
         {
             RuleFor(x => x.Id)
                 .GreaterThanOrEqualTo(0);
-
+            
             RuleFor(x => x.Email)
                 .NotEmpty()
                 .MinimumLength(5)
-                .MaximumLength(20);
+                .MaximumLength(20)
+                .Must(x => !BeUnique(x, context))
+                .WithMessage(x => "Email duplicate");
 
             RuleFor(x => x.Password)
                 .NotEmpty()
                 .MinimumLength(5)
                 .MaximumLength(20);
         }
+
+        private static bool BeUnique(string email, Context context)
+        {
+            var bUnique = context.Users
+                .Any(x => x.Email.Equals(email));
+
+            return bUnique;
+        }
     }
 
-    public class RequestHandler : IRequestHandler<Request, UserModel[]>
+    public class RequestHandler : IRequestHandler<Request, HttpStatusCode>
     {
         private readonly Context _context;
-        private readonly string _administratorEmail;
-        public RequestHandler(Context context, IOptions<ManagmentOptions> options)
+        private readonly ManagmentOptions _managmentOptions;
+        public RequestHandler(Context context, IOptions<ManagmentOptions> managmentOptions)
         {
             _context = context;
-            _administratorEmail = options.Value.AdministratorEmail;
+            _managmentOptions = managmentOptions.Value;
         }
 
-        public async Task<UserModel[]> Handle(Request request, CancellationToken cancellationToken)
+        public async Task<HttpStatusCode> Handle(Request request, CancellationToken cancellationToken)
         {
-            var currentUser = await _context.Users
-                .Include(x => x.UserRoles)
-                .ThenInclude(x => x.Role)
-                .SingleOrDefaultAsync(x => x.Email.Contains(request.Email), cancellationToken);
+            //1. Регистрируем пользователя
+            var userId = await SaveUser(request, cancellationToken);
 
-            if (_administratorEmail.Contains(request.Email))
+            //2. Определяем роль для пользователя
+            var roleName = await DefinitionRole(request, cancellationToken);
+
+            //3. Получаем роль
+            var roleId = await FindRole(roleName, cancellationToken);
+
+            //4. Назначаем роль пользователю
+            await SaveUserRoles(userId, roleId, cancellationToken);
+
+            return HttpStatusCode.OK;
+        }
+
+        private async Task<string> DefinitionRole(Request request, CancellationToken cancellationToken)
+        {
+            var existingAdmin = await _context.UserRoles
+                .AnyAsync(x => x.Role.Name.Equals(Roles.Administrator), cancellationToken);
+
+            if (!existingAdmin && _managmentOptions.AdministratorEmail.Contains(request.Email))
             {
-                var user = ConvertToUser(request);
-
-                _context.Users.Update(user);
-                await _context.SaveChangesAsync(cancellationToken);
-
-               
-
+                return Roles.Administrator;
             }
-
-            return new UserModel[] { };
+            else
+            {
+                return Roles.User;
+            }
         }
 
-        private static User ConvertToUser(Request request)
+        private async Task<int> FindRole(string roleName, CancellationToken cancellationToken) =>
+            await _context.Roles
+                .Where(x => x.Name.Contains(roleName))
+                .Select(x => x.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+
+        private async Task<int> SaveUser(Request request, CancellationToken cancellationToken)
         {
-            return new User
+            var user = ConvertToUser(request);
+
+            await _context.Users.AddAsync(user, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return user.Id;
+        }
+
+        private async Task SaveUserRoles(int userId, int roleId, CancellationToken cancellationToken)
+        {
+            var userRoles = ConvertToUserRoles(userId, roleId);
+
+            await _context.UserRoles.AddAsync(userRoles, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        private static UserRole ConvertToUserRoles(int userId, int roleId) =>
+            new()
+            {
+                RoleId = roleId,
+                UserId = userId
+            };
+            
+        private static User ConvertToUser(Request request) =>
+            new()
             {
                 Id = request.Id,
                 Email = request.Email,
-                Password = request.Password,
+                Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 DateOfBirth = request.DateOfBirth.ToUniversalTime(),
                 DateOfRegistration = request.DateOfRegistration.ToUniversalTime(),
             };
-        }
     }
 }

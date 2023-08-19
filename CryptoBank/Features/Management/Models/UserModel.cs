@@ -7,12 +7,13 @@ public class UserModel
     public string Password { get; set; }
     public DateTime DateOfBirth { get; set; }
     public DateTime DateOfRegistration { get; set; }
-    public List<int> UserRoles { get; set; }
 }
 
-public enum Roles
+public class Roles
 {
-    User,
-    Analyst,
-    Administrator
+    public const string Administrator = "Administrator";
+    public const string User = "User";
+    public const string Analyst = "Analyst";
 }
+
+
