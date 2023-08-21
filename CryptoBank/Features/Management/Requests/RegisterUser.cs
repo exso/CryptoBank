@@ -47,7 +47,7 @@ public static class RegisterUser
                 .NotEmpty()
                 .MinimumLength(5)
                 .MaximumLength(20)
-                .Must(x => !BeUnique(x, context))
+                .MustAsync(async (x, cancellationToken) => !await BeUniqueAsync(x, context, cancellationToken))
                 .WithMessage(x => "Email duplicate");
 
             RuleFor(x => x.Password)
@@ -56,10 +56,10 @@ public static class RegisterUser
                 .MaximumLength(20);
         }
 
-        private static bool BeUnique(string email, Context context)
+        private static async Task<bool> BeUniqueAsync(string email, Context context, CancellationToken cancellationToken)
         {
-            var bUnique = context.Users
-                .Any(x => x.Email.Equals(email));
+            var bUnique = await context.Users
+                .AnyAsync(x => x.Email.Equals(email), cancellationToken);
 
             return bUnique;
         }
@@ -101,10 +101,8 @@ public static class RegisterUser
             {
                 return Roles.Administrator;
             }
-            else
-            {
-                return Roles.User;
-            }
+
+            return Roles.User;
         }
 
         private async Task<int> FindRole(string roleName, CancellationToken cancellationToken) =>
