@@ -11,7 +11,7 @@ public static class ManagmentBuilderExtensions
         // Fake DbContext to satisfy service dependencies
         builder.Services.AddScoped<DbContext>();
 
-        builder.Services.Configure<ManagmentOptions>(builder.Configuration.GetSection("Features:Management"));
+        builder.Services.Configure<ManagementOptions>(builder.Configuration.GetSection("Features:Management"));
 
         builder.Services.AddTransient<RoleSeeder>();
 

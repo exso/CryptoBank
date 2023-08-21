@@ -25,30 +25,33 @@ public static class RegisterUser
             _dispatcher = dispatcher;
         }
 
-        public override async Task<HttpStatusCode> ExecuteAsync(Request request, CancellationToken cancellationToken) =>
-             await _dispatcher.Dispatch(request, cancellationToken);
+        public override async Task<HttpStatusCode> ExecuteAsync(Request request, CancellationToken cancellationToken)
+        {
+            await _dispatcher.Dispatch(request, cancellationToken);
+
+            return HttpStatusCode.OK;
+        }            
     }
 
     public record Request(
-        int Id, 
         string Email,
         string Password,
-        DateTime DateOfBirth,
-        DateTime DateOfRegistration) : IRequest<HttpStatusCode>;
+        DateTime DateOfBirth) : IRequest<Unit>
+    {
+        public string LowercaseEmail => Email.ToLower();
+    }
 
     public class RequestValidator : AbstractValidator<Request>
     {
         public RequestValidator(Context context)
         {
-            RuleFor(x => x.Id)
-                .GreaterThanOrEqualTo(0);
-            
-            RuleFor(x => x.Email)
+            RuleFor(x => x.LowercaseEmail)
                 .NotEmpty()
                 .MinimumLength(5)
                 .MaximumLength(20)
+                .EmailAddress()
                 .MustAsync(async (x, cancellationToken) => !await BeUniqueAsync(x, context, cancellationToken))
-                .WithMessage(x => "Email duplicate");
+                .WithMessage(x => $"User {x.LowercaseEmail} exists");
 
             RuleFor(x => x.Password)
                 .NotEmpty()
@@ -65,23 +68,23 @@ public static class RegisterUser
         }
     }
 
-    public class RequestHandler : IRequestHandler<Request, HttpStatusCode>
+    public class RequestHandler : IRequestHandler<Request, Unit>
     {
         private readonly Context _context;
-        private readonly ManagmentOptions _managmentOptions;
-        public RequestHandler(Context context, IOptions<ManagmentOptions> managmentOptions)
+        private readonly ManagementOptions _managmentOptions;
+        public RequestHandler(Context context, IOptions<ManagementOptions> managmentOptions)
         {
             _context = context;
             _managmentOptions = managmentOptions.Value;
         }
 
-        public async Task<HttpStatusCode> Handle(Request request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(Request request, CancellationToken cancellationToken)
         {
             //1. Регистрируем пользователя
             var userId = await SaveUser(request, cancellationToken);
 
             //2. Определяем роль для пользователя
-            var roleName = await DefinitionRole(request, cancellationToken);
+            var roleName = await DefineRole(request, cancellationToken);
 
             //3. Получаем роль
             var roleId = await FindRole(roleName, cancellationToken);
@@ -89,15 +92,15 @@ public static class RegisterUser
             //4. Назначаем роль пользователю
             await SaveUserRoles(userId, roleId, cancellationToken);
 
-            return HttpStatusCode.OK;
+            return Unit.Value;
         }
 
-        private async Task<string> DefinitionRole(Request request, CancellationToken cancellationToken)
+        private async Task<string> DefineRole(Request request, CancellationToken cancellationToken)
         {
             var existingAdmin = await _context.UserRoles
                 .AnyAsync(x => x.Role.Name.Equals(Roles.Administrator), cancellationToken);
 
-            if (!existingAdmin && _managmentOptions.AdministratorEmail.Contains(request.Email))
+            if (!existingAdmin && _managmentOptions.AdministratorEmail.Contains(request.LowercaseEmail))
             {
                 return Roles.Administrator;
             }
@@ -140,11 +143,10 @@ public static class RegisterUser
         private static User ConvertToUser(Request request) =>
             new()
             {
-                Id = request.Id,
-                Email = request.Email,
+                Email = request.LowercaseEmail,
                 Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 DateOfBirth = request.DateOfBirth.ToUniversalTime(),
-                DateOfRegistration = request.DateOfRegistration.ToUniversalTime(),
+                DateOfRegistration = DateTime.UtcNow,
             };
     }
 }
