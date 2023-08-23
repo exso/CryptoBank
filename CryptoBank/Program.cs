@@ -1,4 +1,6 @@
 ﻿using CryptoBank.Database;
+using CryptoBank.Database.Registration;
+using CryptoBank.Features.Management.Registration;
 using CryptoBank.Features.News.Registration;
 using CryptoBank.Pipeline;
 using CryptoBank.Pipeline.Behaviors;
@@ -28,6 +30,7 @@ builder.Services.AddFastEndpoints();
 
 // Features
 builder.AddNews();
+builder.AddManagement();
 
 var app = builder.Build();
 
@@ -39,6 +42,10 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.MapMetrics();
+
+await app.DatabaseMigrate();
+
+await app.SeedDatabase();
 
 app.MapFastEndpoints();
 

@@ -1,3 +1,6 @@
 # CryptoBank
 
-Endpoints: api/newsapi/get
+Endpoints:
+ 
+/news
+/register/user
