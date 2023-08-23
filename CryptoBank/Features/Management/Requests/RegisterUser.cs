@@ -80,27 +80,26 @@ public static class RegisterUser
 
         public async Task<Unit> Handle(Request request, CancellationToken cancellationToken)
         {
-            //1. Регистрируем пользователя
-            var userId = await SaveUser(request, cancellationToken);
+            //1. Определяем роль для пользователя
+            var roleName = await DefineRole(request.LowercaseEmail, cancellationToken);
 
-            //2. Определяем роль для пользователя
-            var roleName = await DefineRole(request, cancellationToken);
+            //2. Получаем роль
+            var role = await FindRole(roleName, cancellationToken);
 
-            //3. Получаем роль
-            var roleId = await FindRole(roleName, cancellationToken);
+            //3. Регистрируем пользователя
+            await SaveUser(request, role, cancellationToken);
 
-            //4. Назначаем роль пользователю
-            await SaveUserRoles(userId, roleId, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
 
             return Unit.Value;
         }
 
-        private async Task<string> DefineRole(Request request, CancellationToken cancellationToken)
+        private async Task<string> DefineRole(string email, CancellationToken cancellationToken)
         {
             var existingAdmin = await _context.UserRoles
                 .AnyAsync(x => x.Role.Name.Equals(Roles.Administrator), cancellationToken);
 
-            if (!existingAdmin && _managmentOptions.AdministratorEmail.Contains(request.LowercaseEmail))
+            if (!existingAdmin && _managmentOptions.AdministratorEmail.Contains(email))
             {
                 return Roles.Administrator;
             }
@@ -108,45 +107,37 @@ public static class RegisterUser
             return Roles.User;
         }
 
-        private async Task<int> FindRole(string roleName, CancellationToken cancellationToken) =>
-            await _context.Roles
-                .Where(x => x.Name.Contains(roleName))
-                .Select(x => x.Id)
-                .FirstOrDefaultAsync(cancellationToken);
-
-
-        private async Task<int> SaveUser(Request request, CancellationToken cancellationToken)
+        private async Task<Role> FindRole(string roleName, CancellationToken cancellationToken)
         {
-            var user = ConvertToUser(request);
+            var role = await _context.Roles
+                .FirstOrDefaultAsync(x => x.Name.Contains(roleName), cancellationToken);
+
+            return role!;
+        }
+       
+        private async Task<Unit> SaveUser(Request request, Role role, CancellationToken cancellationToken)
+        {
+            var user = ConvertToUser(request, role);
 
             await _context.Users.AddAsync(user, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
 
-            return user.Id;
+            return Unit.Value;
         }
-
-        private async Task SaveUserRoles(int userId, int roleId, CancellationToken cancellationToken)
-        {
-            var userRoles = ConvertToUserRoles(userId, roleId);
-
-            await _context.UserRoles.AddAsync(userRoles, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-
-        private static UserRole ConvertToUserRoles(int userId, int roleId) =>
-            new()
-            {
-                RoleId = roleId,
-                UserId = userId
-            };
-            
-        private static User ConvertToUser(Request request) =>
+  
+        private static User ConvertToUser(Request request, Role role) =>
             new()
             {
                 Email = request.LowercaseEmail,
                 Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 DateOfBirth = request.DateOfBirth.ToUniversalTime(),
                 DateOfRegistration = DateTime.UtcNow,
+                UserRoles = new List<UserRole>()
+                {
+                    new()
+                    {
+                        Role = role,
+                    }
+                }              
             };
     }
 }
