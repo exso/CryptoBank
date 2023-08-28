@@ -1,5 +1,6 @@
 ﻿using CryptoBank.Database;
 using CryptoBank.Database.Registration;
+using CryptoBank.Features.Authenticate.Registration;
 using CryptoBank.Features.Management.Registration;
 using CryptoBank.Features.News.Registration;
 using CryptoBank.Pipeline;
@@ -31,6 +32,7 @@ builder.Services.AddFastEndpoints();
 // Features
 builder.AddNews();
 builder.AddManagement();
+builder.AddAuthenticate();
 
 var app = builder.Build();
 
