@@ -1,6 +1,5 @@
 ﻿using CryptoBank.Database;
 using CryptoBank.Features.Management.Domain;
-using CryptoBank.Features.Management.Models;
 using CryptoBank.Features.Management.Options;
 using CryptoBank.Pipeline;
 using FastEndpoints;

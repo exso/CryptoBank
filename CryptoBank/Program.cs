@@ -17,10 +17,7 @@ builder.Services.AddDbContext<Context>(options =>
 
 builder.Services.AddMediatR(cfg => cfg
     .RegisterServicesFromAssembly(Assembly.GetExecutingAssembly())
-    // Can be merged if necessary
     .AddOpenBehavior(typeof(LoggingBehavior<,>))
-    //.AddOpenBehavior(typeof(MetricsBehavior<,>))
-    //.AddOpenBehavior(typeof(TracingBehavior<,>))
     .AddOpenBehavior(typeof(ValidationBehavior<,>)));
 
 builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
@@ -36,18 +33,17 @@ builder.AddAuthenticate();
 
 var app = builder.Build();
 
-//Telemetry.Init("Vertical");
-
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
 
-//app.MapMetrics();
-
 await app.DatabaseMigrate();
 
 await app.SeedDatabase();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapFastEndpoints();
 

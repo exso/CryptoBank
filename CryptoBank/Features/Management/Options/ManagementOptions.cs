@@ -2,5 +2,5 @@
 
 public class ManagementOptions
 {
-    public string AdministratorEmail { get; set; }
+    public string AdministratorEmail { get; set; } = string.Empty;
 }

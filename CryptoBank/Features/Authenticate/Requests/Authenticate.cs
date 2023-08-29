@@ -1,14 +1,17 @@
-﻿using CryptoBank.Pipeline;
+﻿using CryptoBank.Database;
+using CryptoBank.Features.Authenticate.Services;
+using CryptoBank.Pipeline;
 using FastEndpoints;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace CryptoBank.Features.Authenticate.Requests;
 
-public static class LoginUser
+public static class Authenticate
 {
-    [HttpPost("/login/user")]
+    [HttpPost("/authenticate")]
     [AllowAnonymous]
     public class Endpoint : Endpoint<Request, Response>
     {
@@ -30,6 +33,7 @@ public static class LoginUser
     {
         public RequestValidator()
         {
+            //TODO проверить пользователя и пароль
             RuleFor(x => x.Email)
                 .NotEmpty()
                 .MinimumLength(5)
@@ -45,9 +49,25 @@ public static class LoginUser
 
     public class RequestHandler : IRequestHandler<Request, Response>
     {
-        public Task<Response> Handle(Request request, CancellationToken cancellationToken)
+        private readonly Context _context;
+        private readonly IAccessTokenService _accessTokenService;
+
+        public RequestHandler(Context context, IAccessTokenService accessTokenService)
         {
-            throw new NotImplementedException();
+            _accessTokenService = accessTokenService;
+            _context = context;
+        }
+
+        public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
+        {
+            var user = await _context.Users
+                .Include(x => x.UserRoles)
+                .ThenInclude(x => x.Role)
+                .FirstOrDefaultAsync(x => x.Email == request.Email, cancellationToken);
+
+            var token = _accessTokenService.GetAccessToken(user!);
+
+            return new Response(token);
         }
     }
 }
