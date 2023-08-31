@@ -1,4 +1,5 @@
 ﻿using CryptoBank.Database;
+using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Authenticate.Services;
 using CryptoBank.Pipeline;
 using FastEndpoints;
@@ -6,6 +7,8 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+
+using static CryptoBank.Features.Authenticate.Errors.Codes.AuthenticateValidationErrors;
 
 namespace CryptoBank.Features.Authenticate.Requests;
 
@@ -31,20 +34,24 @@ public static class Authenticate
 
     public class RequestValidator : AbstractValidator<Request>
     {
-        public RequestValidator()
+        public RequestValidator(Context context)
         {
-            //TODO проверить пользователя и пароль
             RuleFor(x => x.Email)
-                .NotEmpty()
+                .NotEmpty().WithErrorCode(EmailRequired)
                 .MinimumLength(5)
                 .MaximumLength(20)
-                .EmailAddress();
+                .EmailAddress().WithErrorCode(EmailInvalid)
+                .MustAsync(async (email, cancellationToken) => await EmailExistsAsync(email, context, cancellationToken))
+                .WithErrorCode(EmailNotFound);
 
             RuleFor(x => x.Password)
-                .NotEmpty()
+                .NotEmpty().WithErrorCode(PasswordRequired)
                 .MinimumLength(5)
                 .MaximumLength(20);
         }
+
+        private static async Task<bool> EmailExistsAsync(string email, Context context, CancellationToken cancellationToken) =>
+            await context.Users.AnyAsync(x => x.Email.Equals(email), cancellationToken);
     }
 
     public class RequestHandler : IRequestHandler<Request, Response>
@@ -63,9 +70,16 @@ public static class Authenticate
             var user = await _context.Users
                 .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
-                .FirstOrDefaultAsync(x => x.Email == request.Email, cancellationToken);
+                .SingleAsync(x => x.Email == request.Email, cancellationToken);
 
-            var token = _accessTokenService.GetAccessToken(user!);
+            var hashPassword = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+
+            if (!hashPassword)
+            {
+                throw new ValidationErrorsException($"{nameof(request.Email)}", "Password invalid", PasswordInvalid);
+            } 
+
+            var token = _accessTokenService.GetAccessToken(user);
 
             return new Response(token);
         }

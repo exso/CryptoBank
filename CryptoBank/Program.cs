@@ -1,12 +1,17 @@
-﻿using CryptoBank.Database;
+﻿using CryptoBank.Authorization;
+using CryptoBank.Authorization.Requirements;
+using CryptoBank.Database;
 using CryptoBank.Database.Registration;
+using CryptoBank.Errors;
 using CryptoBank.Features.Authenticate.Registration;
+using CryptoBank.Features.Management.Domain;
 using CryptoBank.Features.Management.Registration;
 using CryptoBank.Features.News.Registration;
 using CryptoBank.Pipeline;
 using CryptoBank.Pipeline.Behaviors;
 using FastEndpoints;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
@@ -31,6 +36,15 @@ builder.AddNews();
 builder.AddManagement();
 builder.AddAuthenticate();
 
+builder.Services.AddSingleton<IAuthorizationHandler, RoleRequirementHandler>();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(PolicyNames.AdministratorRole, policy => policy.AddRequirements(new RoleRequirement(Roles.Administrator)));
+    options.AddPolicy(PolicyNames.AnalystRole, policy => policy.AddRequirements(new RoleRequirement(Roles.Analyst)));
+    options.AddPolicy(PolicyNames.UserRole, policy => policy.AddRequirements(new RoleRequirement(Roles.User)));
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -41,6 +55,8 @@ if (app.Environment.IsDevelopment())
 await app.DatabaseMigrate();
 
 await app.SeedDatabase();
+
+app.MapProblemDetails();
 
 app.UseAuthentication();
 app.UseAuthorization();
