@@ -1,4 +1,5 @@
-﻿using CryptoBank.Database;
+﻿using CryptoBank.Common.Passwords;
+using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Authenticate.Services;
 using CryptoBank.Pipeline;
@@ -28,7 +29,10 @@ public static class Authenticate
             await _dispatcher.Dispatch(request, cancellationToken);
     }
 
-    public record Request(string Email, string Password) : IRequest<Response>;
+    public record Request(string Email, string Password) : IRequest<Response>
+    {
+        public string LowercaseEmail => Email.ToLower();
+    }
 
     public record Response(string AccessToken);
 
@@ -36,13 +40,13 @@ public static class Authenticate
     {
         public RequestValidator(Context context)
         {
-            RuleFor(x => x.Email)
+            RuleFor(x => x.LowercaseEmail)
                 .NotEmpty().WithErrorCode(EmailRequired)
                 .MinimumLength(5)
                 .MaximumLength(20)
-                .EmailAddress().WithErrorCode(EmailInvalid)
+                .EmailAddress().WithErrorCode(InvalidСredentials)
                 .MustAsync(async (email, cancellationToken) => await EmailExistsAsync(email, context, cancellationToken))
-                .WithErrorCode(EmailNotFound);
+                .WithErrorCode(InvalidСredentials);
 
             RuleFor(x => x.Password)
                 .NotEmpty().WithErrorCode(PasswordRequired)
@@ -58,11 +62,16 @@ public static class Authenticate
     {
         private readonly Context _context;
         private readonly IAccessTokenService _accessTokenService;
+        private readonly Argon2IdPasswordHasher _passwordHasher;
 
-        public RequestHandler(Context context, IAccessTokenService accessTokenService)
+        public RequestHandler(
+            Context context, 
+            IAccessTokenService accessTokenService,
+            Argon2IdPasswordHasher passwordHasher)
         {
             _accessTokenService = accessTokenService;
             _context = context;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
@@ -70,13 +79,13 @@ public static class Authenticate
             var user = await _context.Users
                 .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
-                .SingleAsync(x => x.Email == request.Email, cancellationToken);
+                .SingleAsync(x => x.Email == request.LowercaseEmail, cancellationToken);
 
-            var hashPassword = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+            var passwordHash = _passwordHasher.VerifyHashedPassword(user.Password, request.Password);
 
-            if (!hashPassword)
+            if (!passwordHash)
             {
-                throw new ValidationErrorsException($"{nameof(request.Email)}", "Password invalid", PasswordInvalid);
+                throw new ValidationErrorsException($"{nameof(request.LowercaseEmail)}", "Invalid credentials", InvalidСredentials);
             } 
 
             var token = _accessTokenService.GetAccessToken(user);
