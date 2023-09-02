@@ -1,5 +1,6 @@
 ﻿using CryptoBank.Authorization;
 using CryptoBank.Authorization.Requirements;
+using CryptoBank.Common.Registration;
 using CryptoBank.Database;
 using CryptoBank.Database.Registration;
 using CryptoBank.Errors;
@@ -30,6 +31,9 @@ builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 builder.Services.AddSingleton<Dispatcher>();
 
 builder.Services.AddFastEndpoints();
+
+//Common
+builder.AddCommon();
 
 // Features
 builder.AddNews();
