@@ -22,7 +22,7 @@ namespace CryptoBank.Database.Configuration.Management
 
             builder.Property(e => e.Password)
                 .IsRequired()
-                .HasMaxLength(100)
+                .HasMaxLength(200)
                 .HasColumnName("password");
 
             builder.Property(e => e.DateOfBirth)

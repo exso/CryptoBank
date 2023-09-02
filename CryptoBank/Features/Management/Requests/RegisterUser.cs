@@ -1,6 +1,6 @@
-﻿using CryptoBank.Database;
+﻿using CryptoBank.Common.Passwords;
+using CryptoBank.Database;
 using CryptoBank.Features.Management.Domain;
-using CryptoBank.Features.Management.Models;
 using CryptoBank.Features.Management.Options;
 using CryptoBank.Pipeline;
 using FastEndpoints;
@@ -72,10 +72,15 @@ public static class RegisterUser
     {
         private readonly Context _context;
         private readonly ManagementOptions _managmentOptions;
-        public RequestHandler(Context context, IOptions<ManagementOptions> managmentOptions)
+        private readonly Argon2IdPasswordHasher _passwordHasher;
+        public RequestHandler(
+            Context context, 
+            IOptions<ManagementOptions> managmentOptions,
+            Argon2IdPasswordHasher passwordHasher)
         {
             _context = context;
             _managmentOptions = managmentOptions.Value;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<Unit> Handle(Request request, CancellationToken cancellationToken)
@@ -117,18 +122,20 @@ public static class RegisterUser
        
         private async Task<Unit> SaveUser(Request request, Role role, CancellationToken cancellationToken)
         {
-            var user = ConvertToUser(request, role);
+            var passwordHash = _passwordHasher.HashPassword(request.Password);
+
+            var user = ConvertToUser(request, role, passwordHash);
 
             await _context.Users.AddAsync(user, cancellationToken);
 
             return Unit.Value;
         }
   
-        private static User ConvertToUser(Request request, Role role) =>
+        private static User ConvertToUser(Request request, Role role, string passwordHash) =>
             new()
             {
                 Email = request.LowercaseEmail,
-                Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                Password = passwordHash,
                 DateOfBirth = request.DateOfBirth.ToUniversalTime(),
                 DateOfRegistration = DateTime.UtcNow,
                 UserRoles = new List<UserRole>()

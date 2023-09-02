@@ -1,4 +1,5 @@
-﻿using CryptoBank.Database;
+﻿using CryptoBank.Authorization;
+using CryptoBank.Database;
 using CryptoBank.Features.News.Models;
 using CryptoBank.Features.News.Options;
 using CryptoBank.Pipeline;
@@ -12,8 +13,8 @@ namespace CryptoBank.Features.News.Requests;
 
 public static class GetNews
 {
+    [Authorize(Policy = PolicyNames.UserRole)]
     [HttpGet("/news")]
-    [AllowAnonymous]
     public class Endpoint : Endpoint<Request, NewModel[]>
     {
         private readonly Dispatcher _dispatcher;
