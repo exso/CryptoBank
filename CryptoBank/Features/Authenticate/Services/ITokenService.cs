@@ -2,7 +2,7 @@
 
 namespace CryptoBank.Features.Authenticate.Services;
 
-public interface IAccessTokenService
+public interface ITokenService
 {
     string GetAccessToken(User user);
 }

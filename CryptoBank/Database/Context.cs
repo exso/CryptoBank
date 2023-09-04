@@ -1,4 +1,5 @@
-﻿using CryptoBank.Features.Management.Domain;
+﻿using CryptoBank.Features.Authenticate.Domain;
+using CryptoBank.Features.Management.Domain;
 using CryptoBank.Features.News.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ public class Context : DbContext
     public DbSet<User> Users { get; set; }  
     public DbSet<Role> Roles { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public Context(DbContextOptions<Context> options) : base(options)
     {

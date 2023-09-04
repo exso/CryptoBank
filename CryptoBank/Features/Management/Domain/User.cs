@@ -1,4 +1,6 @@
-﻿namespace CryptoBank.Features.Management.Domain;
+﻿using CryptoBank.Features.Authenticate.Domain;
+
+namespace CryptoBank.Features.Management.Domain;
 
 public class User
 {
@@ -9,4 +11,5 @@ public class User
     public DateTime DateOfRegistration { get; set; }
 
     public ICollection<UserRole> UserRoles { get; set; } = new HashSet<UserRole>();
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = new HashSet<RefreshToken>();
 }

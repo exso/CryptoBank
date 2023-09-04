@@ -27,7 +27,7 @@ public static class AuthenticateBuilderExtensions
 
         builder.Services.Configure<AuthenticateOptions>(builder.Configuration.GetSection("Features:Authenticate"));
 
-        builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
+        builder.Services.AddTransient<ITokenService, TokenService>();
 
         return builder;
     }

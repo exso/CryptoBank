@@ -8,11 +8,11 @@ using System.Text;
 
 namespace CryptoBank.Features.Authenticate.Services;
 
-public class AccessTokenService : IAccessTokenService
+public class TokenService : ITokenService
 {
     private readonly AuthenticateOptions _options;
 
-    public AccessTokenService(IOptions<AuthenticateOptions> options)
+    public TokenService(IOptions<AuthenticateOptions> options)
     {
         _options = options.Value;
     }

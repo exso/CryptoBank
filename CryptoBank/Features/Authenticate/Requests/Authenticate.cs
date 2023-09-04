@@ -61,12 +61,12 @@ public static class Authenticate
     public class RequestHandler : IRequestHandler<Request, Response>
     {
         private readonly Context _context;
-        private readonly IAccessTokenService _accessTokenService;
+        private readonly ITokenService _accessTokenService;
         private readonly Argon2IdPasswordHasher _passwordHasher;
 
         public RequestHandler(
             Context context, 
-            IAccessTokenService accessTokenService,
+            ITokenService accessTokenService,
             Argon2IdPasswordHasher passwordHasher)
         {
             _accessTokenService = accessTokenService;
