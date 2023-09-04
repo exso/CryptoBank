@@ -1,5 +1,6 @@
 ﻿using CryptoBank.Database;
 using CryptoBank.Features.Authenticate.Domain;
+using CryptoBank.Features.Authenticate.Models;
 using CryptoBank.Features.Authenticate.Options;
 using CryptoBank.Features.Management.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +17,16 @@ public class TokenService : ITokenService
 {
     private readonly AuthenticateOptions _options;
     private readonly Context _context;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public TokenService(
         IOptions<AuthenticateOptions> options,
-        Context context)
+        Context context,
+        IHttpContextAccessor httpContextAccessor)
     {
         _options = options.Value;
         _context = context;
+        _httpContextAccessor = httpContextAccessor;
     }
     public string GetAccessToken(User user)
     {
@@ -57,6 +61,8 @@ public class TokenService : ITokenService
         var expires = DateTime.UtcNow.Add(_options.Jwt.RefreshTokenExpiration);
 
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+        _httpContextAccessor.HttpContext!.Features.Set(new TokenFeature(token));
 
         return new()
         {
