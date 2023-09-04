@@ -11,9 +11,9 @@ public class RefreshToken
     public DateTime Created { get; set; }
     public string CreatedByIp { get; set; } = string.Empty;
     public DateTime? Revoked { get; set; }
-    public string RevokedByIp { get; set; } = string.Empty;
-    public string ReplacedByToken { get; set; } = string.Empty;
-    public string ReasonRevoked { get; set; } = string.Empty;
+    public string? RevokedByIp { get; set; }
+    public string? ReplacedByToken { get; set; }
+    public string? ReasonRevoked { get; set; } 
     public bool IsExpired { get; set; }
     public bool IsRevoked {  get; set; }
     public bool IsActive { get; set; }

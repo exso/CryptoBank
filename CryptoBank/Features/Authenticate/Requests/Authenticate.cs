@@ -61,15 +61,15 @@ public static class Authenticate
     public class RequestHandler : IRequestHandler<Request, Response>
     {
         private readonly Context _context;
-        private readonly ITokenService _accessTokenService;
+        private readonly ITokenService _tokenService;
         private readonly Argon2IdPasswordHasher _passwordHasher;
 
         public RequestHandler(
             Context context, 
-            ITokenService accessTokenService,
+            ITokenService tokenService,
             Argon2IdPasswordHasher passwordHasher)
         {
-            _accessTokenService = accessTokenService;
+            _tokenService = tokenService;
             _context = context;
             _passwordHasher = passwordHasher;
         }
@@ -88,9 +88,18 @@ public static class Authenticate
                 throw new ValidationErrorsException($"{nameof(request.LowercaseEmail)}", "Invalid credentials", InvalidСredentials);
             } 
 
-            var token = _accessTokenService.GetAccessToken(user);
+            var accessToken = _tokenService.GetAccessToken(user);
 
-            return new Response(token);
+            var refreshToken = _tokenService.GetRefreshToken();
+
+            user.RefreshTokens.Add(refreshToken);
+
+            _tokenService.RemoveArchiveRefreshTokens(user, cancellationToken);
+
+            _context.Update(user);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return new Response(accessToken);
         }
     }
 }

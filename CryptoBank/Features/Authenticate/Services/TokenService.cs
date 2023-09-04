@@ -1,9 +1,13 @@
-﻿using CryptoBank.Features.Authenticate.Options;
+﻿using CryptoBank.Database;
+using CryptoBank.Features.Authenticate.Domain;
+using CryptoBank.Features.Authenticate.Options;
 using CryptoBank.Features.Management.Domain;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace CryptoBank.Features.Authenticate.Services;
@@ -11,10 +15,14 @@ namespace CryptoBank.Features.Authenticate.Services;
 public class TokenService : ITokenService
 {
     private readonly AuthenticateOptions _options;
+    private readonly Context _context;
 
-    public TokenService(IOptions<AuthenticateOptions> options)
+    public TokenService(
+        IOptions<AuthenticateOptions> options,
+        Context context)
     {
         _options = options.Value;
+        _context = context;
     }
     public string GetAccessToken(User user)
     {
@@ -31,7 +39,7 @@ public class TokenService : ITokenService
            
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Jwt.SigningKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.Now + _options.Jwt.Expiration;
+        var expires = DateTime.UtcNow.Add(_options.Jwt.AccessTokenExpiration);
 
         var token = new JwtSecurityToken(
             _options.Jwt.Issuer,
@@ -42,5 +50,38 @@ public class TokenService : ITokenService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public RefreshToken GetRefreshToken()
+    {
+        var expires = DateTime.UtcNow.Add(_options.Jwt.RefreshTokenExpiration);
+
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+        return new()
+        {
+            Token = token,
+            Expires = expires,
+            Created = DateTime.UtcNow,
+            CreatedByIp = string.Empty,
+            IsActive = true
+        };
+    }
+
+    public async void RemoveArchiveRefreshTokens(User user, CancellationToken cancellationToken)
+    {
+        var expires = DateTime.UtcNow.Add(_options.Jwt.RefreshTokenArchiveExpiration);
+
+        var refreshTokens = await _context.RefreshTokens
+            .Where(x => !x.IsActive && x.Created <= expires)
+            .ToArrayAsync(cancellationToken);
+
+        if (refreshTokens.Any())
+        {
+            foreach (var token in refreshTokens)
+            {
+                user.RefreshTokens.Remove(token);
+            }
+        }       
     }
 }
