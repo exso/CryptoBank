@@ -1,4 +1,5 @@
 ﻿using CryptoBank.Database;
+using CryptoBank.Features.Authenticate.Domain;
 using CryptoBank.Features.Authenticate.Services;
 using CryptoBank.Pipeline;
 using FastEndpoints;
@@ -25,7 +26,7 @@ public static class RefreshTokenRequest
     }
 
     public record Request(string AccessToken) : IRequest<Response>;
-    public record Response();
+    public record Response(string AccessToken);
 
     public class RequestHandler : IRequestHandler<Request, Response>
     {
@@ -40,14 +41,55 @@ public static class RefreshTokenRequest
 
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
         {
-            var refreshToken = _tokenService.GetRefreshTokenCookie();
+            var token = _tokenService.GetRefreshTokenCookie();
+
+            if (token == null)
+            {
+                //токен может быть пустым
+            }
 
             var user = await _context.Users
-                .Include(x => x.RefreshTokens)
-                .ThenInclude(x => x.Token)
-                .SingleAsync(x => x.RefreshTokens.Any(x => x.Token == refreshToken), cancellationToken);
+                .Include(x => x.UserRoles)
+                .ThenInclude(x => x.Role)
+                .SingleAsync(x => x.RefreshTokens.Any(t => t.Token == token), cancellationToken);
 
-            return new Response();
+            var currentRefreshToken = await _context.RefreshTokens
+                .SingleAsync(x => x.Token == token, cancellationToken);
+
+            if (currentRefreshToken.IsRevoked)
+            {
+               
+            }
+
+            if (!currentRefreshToken.IsActive)
+            {
+
+            }
+
+            var accessToken = _tokenService.GetAccessToken(user);
+
+            var newRefreshToken = _tokenService.GetRefreshToken();
+
+            RefreshTokenRotation(currentRefreshToken, newRefreshToken.Token);
+
+            _tokenService.SetRefreshTokenCookie(newRefreshToken.Token);
+
+            await _tokenService.AddAndRemoveRefreshTokens(user, newRefreshToken, cancellationToken);
+
+            return new Response(accessToken);
+        }
+
+        private static RefreshToken RefreshTokenRotation(
+            RefreshToken currentRefreshToken, 
+            string newRefreshToken)
+        {
+            currentRefreshToken.Revoked = DateTime.UtcNow;
+            currentRefreshToken.ReasonRevoked = "Replaced token";
+            currentRefreshToken.ReplacedByToken = newRefreshToken;
+            currentRefreshToken.IsActive = false;
+            currentRefreshToken.IsRevoked = true;
+
+            return currentRefreshToken;
         }
     }
 }

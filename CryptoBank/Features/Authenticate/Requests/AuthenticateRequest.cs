@@ -1,9 +1,7 @@
 ﻿using CryptoBank.Common.Passwords;
 using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
-using CryptoBank.Features.Authenticate.Domain;
 using CryptoBank.Features.Authenticate.Services;
-using CryptoBank.Features.Management.Domain;
 using CryptoBank.Pipeline;
 using FastEndpoints;
 using FluentValidation;
@@ -15,7 +13,7 @@ using static CryptoBank.Features.Authenticate.Errors.Codes.AuthenticateValidatio
 
 namespace CryptoBank.Features.Authenticate.Requests;
 
-public static class Authenticate
+public static class AuthenticateRequest
 {
     [HttpPost("/authenticate")]
     [AllowAnonymous]
@@ -96,23 +94,9 @@ public static class Authenticate
 
             _tokenService.SetRefreshTokenCookie(refreshToken.Token);
 
-            await AddAndRemoveRefreshTokens(user, refreshToken, cancellationToken);
+            await _tokenService.AddAndRemoveRefreshTokens(user, refreshToken, cancellationToken);
 
             return new Response(accessToken);
-        }
-
-        private async Task AddAndRemoveRefreshTokens(
-            User user, 
-            RefreshToken refreshToken, 
-            CancellationToken cancellationToken)
-        {
-            user.RefreshTokens.Add(refreshToken);
-
-            _tokenService.RemoveArchiveRefreshTokens(user, cancellationToken);
-
-            _context.Update(user);
-
-            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }

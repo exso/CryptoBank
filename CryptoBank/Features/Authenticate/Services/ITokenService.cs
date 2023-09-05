@@ -10,4 +10,5 @@ public interface ITokenService
     void RemoveArchiveRefreshTokens(User user, CancellationToken cancellationToken);
     void SetRefreshTokenCookie(string token);
     string GetRefreshTokenCookie();
+    Task AddAndRemoveRefreshTokens(User user, RefreshToken refreshToken, CancellationToken cancellationToken);
 }

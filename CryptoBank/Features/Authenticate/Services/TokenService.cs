@@ -104,5 +104,19 @@ public class TokenService : ITokenService
         var token = _httpContextAccessor.HttpContext!.Request.Cookies["refresh-token"];
 
         return token!;
-    } 
+    }
+
+    public async Task AddAndRemoveRefreshTokens(
+        User user, 
+        RefreshToken refreshToken, 
+        CancellationToken cancellationToken)
+    {
+        user.RefreshTokens.Add(refreshToken);
+
+        RemoveArchiveRefreshTokens(user, cancellationToken);
+
+        _context.Update(user);
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }
