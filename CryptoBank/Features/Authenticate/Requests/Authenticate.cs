@@ -2,7 +2,6 @@
 using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Authenticate.Domain;
-using CryptoBank.Features.Authenticate.Filters;
 using CryptoBank.Features.Authenticate.Services;
 using CryptoBank.Features.Management.Domain;
 using CryptoBank.Pipeline;
@@ -10,11 +9,9 @@ using FastEndpoints;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 using static CryptoBank.Features.Authenticate.Errors.Codes.AuthenticateValidationErrors;
-using HttpPostAttribute = FastEndpoints.HttpPostAttribute;
 
 namespace CryptoBank.Features.Authenticate.Requests;
 
@@ -22,7 +19,6 @@ public static class Authenticate
 {
     [HttpPost("/authenticate")]
     [AllowAnonymous]
-    [ServiceFilter(typeof(TokenCookieResourceFilter))]
     public class Endpoint : Endpoint<Request, Response>
     {
         private readonly Dispatcher _dispatcher;
@@ -97,6 +93,8 @@ public static class Authenticate
             var accessToken = _tokenService.GetAccessToken(user);
 
             var refreshToken = _tokenService.GetRefreshToken();
+
+            _tokenService.SetRefreshTokenCookie(refreshToken.Token);
 
             await AddAndRemoveRefreshTokens(user, refreshToken, cancellationToken);
 

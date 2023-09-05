@@ -1,6 +1,5 @@
 ﻿using CryptoBank.Database;
 using CryptoBank.Features.Authenticate.Domain;
-using CryptoBank.Features.Authenticate.Models;
 using CryptoBank.Features.Authenticate.Options;
 using CryptoBank.Features.Management.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -62,8 +61,6 @@ public class TokenService : ITokenService
 
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
 
-        _httpContextAccessor.HttpContext!.Features.Set(new TokenFeature(token));
-
         return new()
         {
             Token = token,
@@ -90,4 +87,22 @@ public class TokenService : ITokenService
             }
         }       
     }
+
+    public void SetRefreshTokenCookie(string token)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Expires = DateTime.UtcNow.Add(_options.Jwt.RefreshTokenExpiration)
+        };
+
+        _httpContextAccessor.HttpContext!.Response.Cookies.Append("refresh-token", token, cookieOptions);
+    }
+
+    public string GetRefreshTokenCookie()
+    {
+        var token = _httpContextAccessor.HttpContext!.Request.Cookies["refresh-token"];
+
+        return token!;
+    } 
 }

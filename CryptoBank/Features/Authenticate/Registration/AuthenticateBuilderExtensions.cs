@@ -1,5 +1,4 @@
-﻿using CryptoBank.Features.Authenticate.Filters;
-using CryptoBank.Features.Authenticate.Options;
+﻿using CryptoBank.Features.Authenticate.Options;
 using CryptoBank.Features.Authenticate.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -28,11 +27,7 @@ public static class AuthenticateBuilderExtensions
 
         builder.Services.Configure<AuthenticateOptions>(builder.Configuration.GetSection("Features:Authenticate"));
 
-        builder.Services.Configure<CookieOptions>(builder.Configuration.GetSection("Features:Authenticate:Cookie"));
-
         builder.Services.AddTransient<ITokenService, TokenService>();
-
-        builder.Services.AddScoped<TokenCookieResourceFilter>();
 
         return builder;
     }
