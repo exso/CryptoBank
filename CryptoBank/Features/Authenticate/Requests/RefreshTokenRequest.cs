@@ -84,8 +84,7 @@ public static class RefreshTokenRequest
 
             if (currentRefreshToken.IsRevoked)
             {
-                //TODO
-                await _tokenService.RevokeRefreshTokens(user, currentRefreshToken.Token, cancellationToken);
+                await _tokenService.RevokeRefreshTokens(currentRefreshToken.Token, cancellationToken);
             }
 
             if (!currentRefreshToken.IsActive)

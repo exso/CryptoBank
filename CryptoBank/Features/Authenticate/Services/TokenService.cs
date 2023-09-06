@@ -82,7 +82,7 @@ public class TokenService : ITokenService
         }
     }
 
-    public async Task RevokeRefreshTokens(User user, string refreshToken, CancellationToken cancellationToken)
+    public async Task RevokeRefreshTokens(string refreshToken, CancellationToken cancellationToken)
     {
         var refreshTokens = await _context.RefreshTokens
             .Where(x => x.Token == refreshToken || x.ReplacedByToken == refreshToken)
@@ -92,8 +92,12 @@ public class TokenService : ITokenService
         {
             foreach (var token in refreshTokens)
             {
-                token.IsRevoked = true;
+                token.ReasonRevoked = "Invalid token";
+
+                _context.RefreshTokens.Update(token);
             }
+
+            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }
