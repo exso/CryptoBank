@@ -29,6 +29,10 @@ public static class AuthenticateBuilderExtensions
 
         builder.Services.AddTransient<ITokenService, TokenService>();
 
+        builder.Services.AddTransient<IRefreshTokenCookie, RefreshTokenCookie>();
+
+        builder.Services.AddHostedService<ArchivedRefreshTokensHostedService>();
+
         return builder;
     }
 }

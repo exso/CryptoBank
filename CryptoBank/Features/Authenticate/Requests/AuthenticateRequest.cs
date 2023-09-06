@@ -62,15 +62,18 @@ public static class AuthenticateRequest
     {
         private readonly Context _context;
         private readonly ITokenService _tokenService;
+        private readonly IRefreshTokenCookie _refreshTokenCookie;
         private readonly Argon2IdPasswordHasher _passwordHasher;
 
         public RequestHandler(
             Context context, 
             ITokenService tokenService,
+            IRefreshTokenCookie refreshTokenCookie,
             Argon2IdPasswordHasher passwordHasher)
         {
-            _tokenService = tokenService;
             _context = context;
+            _tokenService = tokenService;
+            _refreshTokenCookie = refreshTokenCookie;
             _passwordHasher = passwordHasher;
         }
 
@@ -92,9 +95,13 @@ public static class AuthenticateRequest
 
             var refreshToken = _tokenService.GetRefreshToken();
 
-            _tokenService.SetRefreshTokenCookie(refreshToken.Token);
+            _refreshTokenCookie.SetRefreshTokenCookie(refreshToken.Token);
 
-            await _tokenService.AddAndRemoveRefreshTokens(user, refreshToken, cancellationToken);
+            user.RefreshTokens.Add(refreshToken);
+
+            _context.Update(user);
+
+            await _context.SaveChangesAsync(cancellationToken);
 
             return new Response(accessToken);
         }

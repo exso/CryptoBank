@@ -1,11 +1,15 @@
 ﻿using CryptoBank.Database;
+using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Authenticate.Domain;
 using CryptoBank.Features.Authenticate.Services;
+using CryptoBank.Features.Management.Domain;
 using CryptoBank.Pipeline;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+
+using static CryptoBank.Features.Authenticate.Errors.Codes.AuthenticateValidationErrors;
 
 namespace CryptoBank.Features.Authenticate.Requests;
 
@@ -32,22 +36,44 @@ public static class RefreshTokenRequest
     {
         private readonly Context _context;
         private readonly ITokenService _tokenService;
+        private readonly IRefreshTokenCookie _refreshTokenCookie;
 
-        public RequestHandler(Context context, ITokenService tokenService)
+        public RequestHandler(
+            Context context, 
+            ITokenService tokenService,
+            IRefreshTokenCookie refreshTokenCookie)
         {
             _context = context;
             _tokenService = tokenService;
+            _refreshTokenCookie = refreshTokenCookie;
         }
 
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
         {
-            var token = _tokenService.GetRefreshTokenCookie();
+            var token = _refreshTokenCookie.GetRefreshTokenCookie() 
+                ?? throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
 
-            if (token == null)
-            {
-                //токен может быть пустым
-            }
+            var (user, currentRefreshToken) = await CheckToken(token, cancellationToken);
 
+            var accessToken = _tokenService.GetAccessToken(user);
+
+            var newRefreshToken = _tokenService.GetRefreshToken();
+
+            RefreshTokenRotation(currentRefreshToken, newRefreshToken.Token);
+
+            _refreshTokenCookie.SetRefreshTokenCookie(newRefreshToken.Token);
+
+            user.RefreshTokens.Add(newRefreshToken);
+
+            _context.Update(user);
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return new Response(accessToken);
+        }
+
+        private async Task<(User, RefreshToken)> CheckToken(string token, CancellationToken cancellationToken)
+        {
             var user = await _context.Users
                 .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
@@ -58,25 +84,16 @@ public static class RefreshTokenRequest
 
             if (currentRefreshToken.IsRevoked)
             {
-               
+                //TODO
+                await _tokenService.RevokeRefreshTokens(user, currentRefreshToken.Token, cancellationToken);
             }
 
             if (!currentRefreshToken.IsActive)
             {
-
+                throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
             }
 
-            var accessToken = _tokenService.GetAccessToken(user);
-
-            var newRefreshToken = _tokenService.GetRefreshToken();
-
-            RefreshTokenRotation(currentRefreshToken, newRefreshToken.Token);
-
-            _tokenService.SetRefreshTokenCookie(newRefreshToken.Token);
-
-            await _tokenService.AddAndRemoveRefreshTokens(user, newRefreshToken, cancellationToken);
-
-            return new Response(accessToken);
+            return (user, currentRefreshToken);
         }
 
         private static RefreshToken RefreshTokenRotation(

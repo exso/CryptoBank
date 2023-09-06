@@ -16,16 +16,13 @@ public class TokenService : ITokenService
 {
     private readonly AuthenticateOptions _options;
     private readonly Context _context;
-    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public TokenService(
         IOptions<AuthenticateOptions> options,
-        Context context,
-        IHttpContextAccessor httpContextAccessor)
+        Context context)
     {
         _options = options.Value;
         _context = context;
-        _httpContextAccessor = httpContextAccessor;
     }
     public string GetAccessToken(User user)
     {
@@ -71,52 +68,32 @@ public class TokenService : ITokenService
         };
     }
 
-    public async void RemoveArchiveRefreshTokens(User user, CancellationToken cancellationToken)
+    public async Task RemoveArchivedRefreshTokens(CancellationToken cancellationToken)
     {
-        var expires = DateTime.UtcNow.Add(_options.Jwt.RefreshTokenArchiveExpiration);
-
         var refreshTokens = await _context.RefreshTokens
-            .Where(x => !x.IsActive && x.Created <= expires)
+            .Where(x => !x.IsActive && x.Created.AddDays(_options.Jwt.RefreshTokenArchiveExpiration) <= DateTime.UtcNow)
+            .ToArrayAsync(cancellationToken);
+
+        if (refreshTokens.Any())
+        {
+            _context.RefreshTokens.RemoveRange(refreshTokens);
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task RevokeRefreshTokens(User user, string refreshToken, CancellationToken cancellationToken)
+    {
+        var refreshTokens = await _context.RefreshTokens
+            .Where(x => x.Token == refreshToken || x.ReplacedByToken == refreshToken)
             .ToArrayAsync(cancellationToken);
 
         if (refreshTokens.Any())
         {
             foreach (var token in refreshTokens)
             {
-                user.RefreshTokens.Remove(token);
+                token.IsRevoked = true;
             }
-        }       
-    }
-
-    public void SetRefreshTokenCookie(string token)
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Expires = DateTime.UtcNow.Add(_options.Jwt.RefreshTokenExpiration)
-        };
-
-        _httpContextAccessor.HttpContext!.Response.Cookies.Append("refresh-token", token, cookieOptions);
-    }
-
-    public string GetRefreshTokenCookie()
-    {
-        var token = _httpContextAccessor.HttpContext!.Request.Cookies["refresh-token"];
-
-        return token!;
-    }
-
-    public async Task AddAndRemoveRefreshTokens(
-        User user, 
-        RefreshToken refreshToken, 
-        CancellationToken cancellationToken)
-    {
-        user.RefreshTokens.Add(refreshToken);
-
-        RemoveArchiveRefreshTokens(user, cancellationToken);
-
-        _context.Update(user);
-
-        await _context.SaveChangesAsync(cancellationToken);
+        }
     }
 }

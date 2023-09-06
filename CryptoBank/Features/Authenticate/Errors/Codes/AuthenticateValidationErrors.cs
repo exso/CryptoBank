@@ -7,4 +7,5 @@ public static class AuthenticateValidationErrors
     public const string EmailRequired = Prefix + "email_required";
     public const string InvalidСredentials = Prefix + "invalid_credentials";
     public const string PasswordRequired = Prefix + "password_required";
+    public const string InvalidToken = Prefix + "invalid_token";
 }

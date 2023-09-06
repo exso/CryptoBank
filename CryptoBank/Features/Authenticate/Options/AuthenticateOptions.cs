@@ -11,6 +11,7 @@ public class AuthenticateOptions
         public string Audience { get; set; } = string.Empty;
         public TimeSpan AccessTokenExpiration { get; set; }
         public TimeSpan RefreshTokenExpiration { get; set; }
-        public TimeSpan RefreshTokenArchiveExpiration { get; set; }
+        public int RefreshTokenArchiveExpiration { get; set; }
+        public int IntervalRemovedArchivedRefreshTokens { get; set; }
     }
 }
