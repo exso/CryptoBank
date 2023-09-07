@@ -1,75 +1,54 @@
 ﻿using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Authenticate.Services;
-using CryptoBank.Pipeline;
 using FastEndpoints;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
 
 using static CryptoBank.Features.Authenticate.Errors.Codes.AuthenticateValidationErrors;
 
 namespace CryptoBank.Features.Authenticate.Requests;
 
-public static class RevokeTokenRequest
+public class RevokeTokenRequest : EndpointWithoutRequest<Unit>
 {
-    [HttpPost("/revokeToken")]
-    [AllowAnonymous]
-    public class Endpoint : Endpoint<Request, HttpStatusCode>
+    private readonly Context _context;
+    private readonly IRefreshTokenCookie _refreshTokenCookie;
+
+    public RevokeTokenRequest(
+        Context context,
+        IRefreshTokenCookie refreshTokenCookie)
     {
-        private readonly Dispatcher _dispatcher;
-        public Endpoint(Dispatcher dispatcher)
-        {
-            _dispatcher = dispatcher;
-        }
-
-        public override async Task<HttpStatusCode> ExecuteAsync(Request request, CancellationToken cancellationToken)
-        {
-            await _dispatcher.Dispatch(request, cancellationToken);
-
-            return HttpStatusCode.OK;
-        }         
+        _context = context;
+        _refreshTokenCookie = refreshTokenCookie;
     }
 
-    public record Request(string AccessToken) : IRequest<Unit>;
-
-    public class RequestHandler : IRequestHandler<Request, Unit>
+    public override void Configure()
     {
-        private readonly Context _context;
-        private readonly IRefreshTokenCookie _refreshTokenCookie;
+        Post("/revokeToken");
+        AllowAnonymous();
+    }
 
-        public RequestHandler(
-            Context context,
-            IRefreshTokenCookie refreshTokenCookie)
+    public override async Task<Unit> HandleAsync(CancellationToken cancellationToken)
+    {
+        var token = _refreshTokenCookie.GetRefreshTokenCookie()
+            ?? throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
+
+        var currentRefreshToken = await _context.RefreshTokens
+        .SingleAsync(x => x.Token == token, cancellationToken);
+
+        if (!currentRefreshToken.IsActive)
         {
-            _context = context;
-            _refreshTokenCookie = refreshTokenCookie;
+            throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
         }
 
-        public async Task<Unit> Handle(Request request, CancellationToken cancellationToken)
-        {
-            var token = _refreshTokenCookie.GetRefreshTokenCookie()
-                ?? throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
+        currentRefreshToken.Revoked = DateTime.UtcNow;
+        currentRefreshToken.ReasonRevoked = "Revoked token";
+        currentRefreshToken.IsRevoked = true;
+        currentRefreshToken.IsActive = false;
 
-            var currentRefreshToken = await _context.RefreshTokens
-                .SingleAsync(x => x.Token == token, cancellationToken);
+        _context.RefreshTokens.Update(currentRefreshToken);
+        await _context.SaveChangesAsync(cancellationToken);
 
-            if (!currentRefreshToken.IsActive)
-            {
-                throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
-            }
-
-            currentRefreshToken.Revoked = DateTime.UtcNow;
-            currentRefreshToken.ReasonRevoked = "Revoked token";
-            currentRefreshToken.IsRevoked = true;
-            currentRefreshToken.IsActive = false;
-
-            _context.RefreshTokens.Update(currentRefreshToken);
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return Unit.Value;
-        }
+        return Unit.Value;
     }
 }
