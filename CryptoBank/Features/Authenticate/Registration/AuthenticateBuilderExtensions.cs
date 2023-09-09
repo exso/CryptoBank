@@ -1,4 +1,5 @@
-﻿using CryptoBank.Features.Authenticate.Options;
+﻿using CryptoBank.Features.Authenticate.Jobs;
+using CryptoBank.Features.Authenticate.Options;
 using CryptoBank.Features.Authenticate.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;

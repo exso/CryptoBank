@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CryptoBank.Database.Configuration.Authenticate;
 
-public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
+public sealed class UserTokenConfiguration : IEntityTypeConfiguration<UserToken>
 {
-    public void Configure(EntityTypeBuilder<RefreshToken> builder)
+    public void Configure(EntityTypeBuilder<UserToken> builder)
     {
-        builder.ToTable("refresh_tokens");
+        builder.ToTable("user_tokens");
         builder.HasKey(x => x.Id);
 
         builder.Property(e => e.Id)
@@ -27,16 +27,8 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         builder.Property(e => e.Created)
             .HasColumnName("created");
 
-        builder.Property(e => e.CreatedByIp)
-            .HasMaxLength(20)
-            .HasColumnName("created_by_ip");
-
         builder.Property(e => e.Revoked)
             .HasColumnName("revoked");
-
-        builder.Property(e => e.RevokedByIp)
-            .HasMaxLength(20)
-            .HasColumnName("revoked_by_ip");
 
         builder.Property(e => e.ReplacedByToken)
             .HasMaxLength(256)
@@ -46,16 +38,10 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
             .HasMaxLength(20)
             .HasColumnName("reason_revoked");
 
-        builder.Property(e => e.IsExpired).HasColumnName("is_expired");
-
-        builder.Property(e => e.IsRevoked).HasColumnName("is_revoked");
-
-        builder.Property(e => e.IsActive).HasColumnName("is_active");
-
         builder.HasOne(x => x.User)
-            .WithMany(x => x.RefreshTokens)
+            .WithMany(x => x.UserTokens)
             .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.Restrict)
+            .OnDelete(DeleteBehavior.Cascade)
             ;
     }
 }

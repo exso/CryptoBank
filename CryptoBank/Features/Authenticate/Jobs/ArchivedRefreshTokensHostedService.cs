@@ -1,7 +1,8 @@
 ﻿using CryptoBank.Features.Authenticate.Options;
+using CryptoBank.Features.Authenticate.Services;
 using Microsoft.Extensions.Options;
 
-namespace CryptoBank.Features.Authenticate.Services;
+namespace CryptoBank.Features.Authenticate.Jobs;
 
 public class ArchivedRefreshTokensHostedService : BackgroundService
 {
@@ -18,6 +19,7 @@ public class ArchivedRefreshTokensHostedService : BackgroundService
         _options = options.Value;
         _serviceScopeFactory = serviceScopeFactory;
     }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -32,12 +34,12 @@ public class ArchivedRefreshTokensHostedService : BackgroundService
 
                 _logger.LogInformation("Archived refresh tokens removed");
 
-                await Task.Delay(_options.Jwt.IntervalRemovedArchivedRefreshTokens, stoppingToken);
+                await Task.Delay(_options.RefreshToken.JobInterval, stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Request execution error");
-            }       
-        } 
+            }
+        }
     }
 }

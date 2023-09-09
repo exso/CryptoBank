@@ -1,5 +1,8 @@
-﻿using CryptoBank.Features.Authenticate.Options;
+﻿using CryptoBank.Errors.Exceptions;
+using CryptoBank.Features.Authenticate.Options;
 using Microsoft.Extensions.Options;
+
+using static CryptoBank.Features.Authenticate.Errors.Codes.AuthenticateValidationErrors;
 
 namespace CryptoBank.Features.Authenticate.Services;
 
@@ -22,7 +25,7 @@ public class RefreshTokenCookie : IRefreshTokenCookie
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Expires = DateTime.UtcNow.Add(_options.Jwt.RefreshTokenExpiration)
+            Expires = DateTime.UtcNow.Add(_options.RefreshToken.Expiration)
         };
 
         _httpContextAccessor.HttpContext!.Response.Cookies.Append(CookieName, refreshToken, cookieOptions);
@@ -30,8 +33,9 @@ public class RefreshTokenCookie : IRefreshTokenCookie
 
     public string GetRefreshTokenCookie()
     {
-        var refreshToken = _httpContextAccessor.HttpContext!.Request.Cookies[CookieName];
+        var refreshToken = _httpContextAccessor.HttpContext!.Request.Cookies[CookieName]
+            ?? throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
 
-        return refreshToken!;
+        return refreshToken;
     }
 }

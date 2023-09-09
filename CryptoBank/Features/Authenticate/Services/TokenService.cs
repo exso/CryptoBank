@@ -24,6 +24,7 @@ public class TokenService : ITokenService
         _options = options.Value;
         _context = context;
     }
+
     public string GetAccessToken(User user)
     {
         var claims = new List<Claim>
@@ -39,7 +40,7 @@ public class TokenService : ITokenService
            
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Jwt.SigningKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.UtcNow.Add(_options.Jwt.AccessTokenExpiration);
+        var expires = DateTime.UtcNow.Add(_options.Jwt.Expiration);
 
         var token = new JwtSecurityToken(
             _options.Jwt.Issuer,
@@ -52,9 +53,9 @@ public class TokenService : ITokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public RefreshToken GetRefreshToken()
+    public UserToken GetRefreshToken()
     {
-        var expires = DateTime.UtcNow.Add(_options.Jwt.RefreshTokenExpiration);
+        var expires = DateTime.UtcNow.Add(_options.RefreshToken.Expiration);
 
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
 
@@ -62,21 +63,19 @@ public class TokenService : ITokenService
         {
             Token = token,
             Expires = expires,
-            Created = DateTime.UtcNow,
-            CreatedByIp = string.Empty,
-            IsActive = true
+            Created = DateTime.UtcNow
         };
     }
 
     public async Task RemoveArchivedRefreshTokens(CancellationToken cancellationToken)
     {
-        var refreshTokens = await _context.RefreshTokens
-            .Where(x => !x.IsActive && x.Created.AddDays(_options.Jwt.RefreshTokenArchiveExpiration) <= DateTime.UtcNow)
+        var refreshTokens = await _context.UserTokens
+            //.Where(x => !x.IsActive && x.Created.Add(_options.RefreshToken.ArchiveExpiration) <= DateTime.UtcNow)
             .ToArrayAsync(cancellationToken);
 
         if (refreshTokens.Any())
         {
-            _context.RefreshTokens.RemoveRange(refreshTokens);
+            _context.UserTokens.RemoveRange(refreshTokens);
 
             await _context.SaveChangesAsync(cancellationToken);
         }
@@ -84,7 +83,7 @@ public class TokenService : ITokenService
 
     public async Task RevokeRefreshTokens(string refreshToken, CancellationToken cancellationToken)
     {
-        var refreshTokens = await _context.RefreshTokens
+        var refreshTokens = await _context.UserTokens
             .Where(x => x.Token == refreshToken || x.ReplacedByToken == refreshToken)
             .ToArrayAsync(cancellationToken);
 
@@ -93,8 +92,6 @@ public class TokenService : ITokenService
             foreach (var token in refreshTokens)
             {
                 token.ReasonRevoked = "Invalid token";
-
-                _context.RefreshTokens.Update(token);
             }
 
             await _context.SaveChangesAsync(cancellationToken);
