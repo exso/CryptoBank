@@ -69,32 +69,19 @@ public class TokenService : ITokenService
 
     public async Task RemoveArchivedRefreshTokens(CancellationToken cancellationToken)
     {
-        var refreshTokens = await _context.UserTokens
-            //.Where(x => !x.IsActive && x.Created.Add(_options.RefreshToken.ArchiveExpiration) <= DateTime.UtcNow)
-            .ToArrayAsync(cancellationToken);
+        var expires = DateTime.UtcNow.Subtract(_options.RefreshToken.ArchiveExpiration);
 
-        if (refreshTokens.Any())
-        {
-            _context.UserTokens.RemoveRange(refreshTokens);
-
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        await _context.UserTokens
+            .Where(x => x.Revoked != null && x.Created <= expires)
+            .ExecuteDeleteAsync(cancellationToken);
     }
 
-    public async Task RevokeRefreshTokens(string refreshToken, CancellationToken cancellationToken)
+    public async Task RevokeRefreshTokens(int userId, CancellationToken cancellationToken)
     {
-        var refreshTokens = await _context.UserTokens
-            .Where(x => x.Token == refreshToken || x.ReplacedByToken == refreshToken)
-            .ToArrayAsync(cancellationToken);
-
-        if (refreshTokens.Any())
-        {
-            foreach (var token in refreshTokens)
-            {
-                token.ReasonRevoked = "Invalid token";
-            }
-
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        await _context.UserTokens
+            .Where(x => x.UserId == userId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.Revoked, DateTime.UtcNow)
+                .SetProperty(x => x.ReasonRevoked, "Invalid token"), cancellationToken);
     }
 }

@@ -60,34 +60,43 @@ public static class RefreshToken
 
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
         {
-            var (user, currentRefreshToken) = await CheckToken(request.RefreshToken, cancellationToken);
+            var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+            var user = await FindUser(request.RefreshToken, cancellationToken);
+
+            await CheckRefreshToken(user.Id, request.RefreshToken, cancellationToken);
 
             var accessToken = _tokenService.GetAccessToken(user);
 
             var newRefreshToken = _tokenService.GetRefreshToken();
 
-            RotateRefreshToken(currentRefreshToken, newRefreshToken.Token);
+            await SaveRefreshToken(user, newRefreshToken, cancellationToken);
 
-            user.UserTokens.Add(newRefreshToken);
+            await RotateRefreshToken(request.RefreshToken, newRefreshToken.Id);
 
-            await _context.SaveChangesAsync(cancellationToken);
+            await tx.CommitAsync(cancellationToken);
 
             return new Response(accessToken, newRefreshToken.Token);
         }
 
-        private async Task<(User, UserToken)> CheckToken(string token, CancellationToken cancellationToken)
+        private async Task<User> FindUser(string refreshToken, CancellationToken cancellationToken)
         {
             var user = await _context.Users
                 .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
-                .SingleAsync(x => x.UserTokens.Any(t => t.Token == token), cancellationToken);
+                .SingleAsync(x => x.UserTokens.Any(t => t.Token == refreshToken), cancellationToken);
 
+            return user;
+        }
+
+        private async Task CheckRefreshToken(int userId, string refreshToken, CancellationToken cancellationToken)
+        {
             var currentRefreshToken = await _context.UserTokens
-                .SingleAsync(x => x.Token == token, cancellationToken);
+                .SingleAsync(x => x.Token == refreshToken, cancellationToken);
 
             if (currentRefreshToken.IsRevoked)
             {
-                await _tokenService.RevokeRefreshTokens(currentRefreshToken.Token, cancellationToken);
+                await _tokenService.RevokeRefreshTokens(userId, cancellationToken);
             }
 
             if (!currentRefreshToken.IsActive)
@@ -95,18 +104,32 @@ public static class RefreshToken
                 throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
             }
 
-            return (user, currentRefreshToken);
+            if (currentRefreshToken.Expires <= DateTime.UtcNow)
+            {
+                throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
+            }
         }
 
-        private static UserToken RotateRefreshToken(
-            UserToken currentRefreshToken,
-            string newRefreshToken)
+        private async Task SaveRefreshToken(
+            User user, 
+            UserToken newRefreshToken, 
+            CancellationToken cancellationToken)
         {
-            currentRefreshToken.Revoked = DateTime.UtcNow;
-            currentRefreshToken.ReasonRevoked = "Replaced token";
-            currentRefreshToken.ReplacedByToken = newRefreshToken;
+            user.UserTokens.Add(newRefreshToken);
 
-            return currentRefreshToken;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        private async Task RotateRefreshToken(
+            string refreshToken,
+            int newRefreshTokenId)
+        {
+            await _context.UserTokens
+                .Where(x => x.Token == refreshToken)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Revoked, DateTime.UtcNow)
+                    .SetProperty(x => x.ReasonRevoked, "Replaced token")
+                    .SetProperty(x => x.ReplacedByTokenId, newRefreshTokenId));
         }
     }
 }

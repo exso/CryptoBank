@@ -30,9 +30,8 @@ public sealed class UserTokenConfiguration : IEntityTypeConfiguration<UserToken>
         builder.Property(e => e.Revoked)
             .HasColumnName("revoked");
 
-        builder.Property(e => e.ReplacedByToken)
-            .HasMaxLength(256)
-            .HasColumnName("replaced_by_token");
+        builder.Property(e => e.ReplacedByTokenId)
+            .HasColumnName("replaced_by_token_id");
 
         builder.Property(e => e.ReasonRevoked)
             .HasMaxLength(20)
@@ -41,6 +40,12 @@ public sealed class UserTokenConfiguration : IEntityTypeConfiguration<UserToken>
         builder.HasOne(x => x.User)
             .WithMany(x => x.UserTokens)
             .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade)
+            ;
+
+        builder.HasOne(x => x.RefreshToken)
+            .WithOne()
+            .HasForeignKey<UserToken>(x => x.ReplacedByTokenId)
             .OnDelete(DeleteBehavior.Cascade)
             ;
     }

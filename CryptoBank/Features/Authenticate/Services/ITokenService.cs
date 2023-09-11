@@ -7,6 +7,6 @@ public interface ITokenService
 {
     string GetAccessToken(User user);
     UserToken GetRefreshToken();
-    Task RevokeRefreshTokens(string refreshToken, CancellationToken cancellationToken);
+    Task RevokeRefreshTokens(int userId, CancellationToken cancellationToken);
     Task RemoveArchivedRefreshTokens(CancellationToken cancellationToken);
 }

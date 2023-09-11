@@ -10,11 +10,12 @@ public class UserToken
     public DateTime Expires { get; set; }
     public DateTime Created { get; set; }
     public DateTime? Revoked { get; set; }
-    public string? ReplacedByToken { get; set; }
+    public int? ReplacedByTokenId { get; set; }
     public string? ReasonRevoked { get; set; }
     public bool IsExpired => Expires < DateTime.UtcNow;
     public bool IsRevoked => Revoked is not null;
     public bool IsActive => !IsExpired && !IsRevoked;
 
     public User User { get; set; } = new User();
+    public UserToken? RefreshToken { get; set; }
 }
