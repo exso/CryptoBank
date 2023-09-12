@@ -60,7 +60,7 @@ public static class RefreshToken
 
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
         {
-            var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
+            await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
 
             var user = await FindUser(request.RefreshToken, cancellationToken);
 

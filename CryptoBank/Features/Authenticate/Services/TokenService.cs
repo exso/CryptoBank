@@ -80,6 +80,7 @@ public class TokenService : ITokenService
     {
         await _context.UserTokens
             .Where(x => x.UserId == userId)
+            .Where(x => x.Revoked == null)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(x => x.Revoked, DateTime.UtcNow)
                 .SetProperty(x => x.ReasonRevoked, "Invalid token"), cancellationToken);
