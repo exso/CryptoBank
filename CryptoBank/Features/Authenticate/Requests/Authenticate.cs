@@ -1,6 +1,7 @@
 ﻿using CryptoBank.Common.Passwords;
 using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
+using CryptoBank.Features.Authenticate.Models;
 using CryptoBank.Features.Authenticate.Services;
 using CryptoBank.Pipeline;
 using FastEndpoints;
@@ -17,16 +18,25 @@ public static class Authenticate
 {
     [HttpPost("/authenticate")]
     [AllowAnonymous]
-    public class Endpoint : Endpoint<Request, Response>
+    public class Endpoint : Endpoint<Request, AuthenticateModel>
     {
         private readonly Dispatcher _dispatcher;
-        public Endpoint(Dispatcher dispatcher)
+        private readonly IRefreshTokenCookie _refreshTokenCookie;
+
+        public Endpoint(Dispatcher dispatcher, IRefreshTokenCookie refreshTokenCookie)
         {
             _dispatcher = dispatcher;
+            _refreshTokenCookie = refreshTokenCookie;
         }
 
-        public override async Task<Response> ExecuteAsync(Request request, CancellationToken cancellationToken) =>
-            await _dispatcher.Dispatch(request, cancellationToken);
+        public override async Task<AuthenticateModel> ExecuteAsync(Request request, CancellationToken cancellationToken)
+        {
+            var response = await _dispatcher.Dispatch(request, cancellationToken);
+
+            _refreshTokenCookie.SetRefreshTokenCookie(response.RefreshToken);
+
+            return new AuthenticateModel { AccessToken = response.AccessToken };
+        }          
     }
 
     public record Request(string Email, string Password) : IRequest<Response>
@@ -34,7 +44,7 @@ public static class Authenticate
         public string LowercaseEmail => Email.ToLower();
     }
 
-    public record Response(string AccessToken);
+    public record Response(string AccessToken, string RefreshToken);
 
     public class RequestValidator : AbstractValidator<Request>
     {
@@ -61,16 +71,16 @@ public static class Authenticate
     public class RequestHandler : IRequestHandler<Request, Response>
     {
         private readonly Context _context;
-        private readonly IAccessTokenService _accessTokenService;
+        private readonly ITokenService _tokenService;
         private readonly Argon2IdPasswordHasher _passwordHasher;
 
         public RequestHandler(
             Context context, 
-            IAccessTokenService accessTokenService,
+            ITokenService tokenService,
             Argon2IdPasswordHasher passwordHasher)
         {
-            _accessTokenService = accessTokenService;
             _context = context;
+            _tokenService = tokenService;
             _passwordHasher = passwordHasher;
         }
 
@@ -88,9 +98,15 @@ public static class Authenticate
                 throw new ValidationErrorsException($"{nameof(request.LowercaseEmail)}", "Invalid credentials", InvalidСredentials);
             } 
 
-            var token = _accessTokenService.GetAccessToken(user);
+            var accessToken = _tokenService.GetAccessToken(user);
 
-            return new Response(token);
+            var refreshToken = _tokenService.GetRefreshToken();
+
+            user.UserTokens.Add(refreshToken);
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return new Response(accessToken, refreshToken.Token);
         }
     }
 }

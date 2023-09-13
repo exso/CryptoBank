@@ -3,6 +3,7 @@ using System;
 using CryptoBank.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CryptoBank.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20230909091844_UserTokenConfigurationUpdate")]
+    partial class UserTokenConfigurationUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,9 +48,10 @@ namespace CryptoBank.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("reason_revoked");
 
-                    b.Property<int?>("ReplacedByTokenId")
-                        .HasColumnType("integer")
-                        .HasColumnName("replaced_by_token_id");
+                    b.Property<string>("ReplacedByToken")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("replaced_by_token");
 
                     b.Property<DateTime?>("Revoked")
                         .HasColumnType("timestamp with time zone")
@@ -64,9 +68,6 @@ namespace CryptoBank.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ReplacedByTokenId")
-                        .IsUnique();
 
                     b.HasIndex("UserId");
 
@@ -188,18 +189,11 @@ namespace CryptoBank.Migrations
 
             modelBuilder.Entity("CryptoBank.Features.Authenticate.Domain.UserToken", b =>
                 {
-                    b.HasOne("CryptoBank.Features.Authenticate.Domain.UserToken", "RefreshToken")
-                        .WithOne()
-                        .HasForeignKey("CryptoBank.Features.Authenticate.Domain.UserToken", "ReplacedByTokenId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("CryptoBank.Features.Management.Domain.User", "User")
                         .WithMany("UserTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("RefreshToken");
 
                     b.Navigation("User");
                 });

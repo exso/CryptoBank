@@ -3,6 +3,7 @@ using System;
 using CryptoBank.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CryptoBank.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20230904090214_CreateTableRefreshToken")]
+    partial class CreateTableRefreshToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -23,7 +26,7 @@ namespace CryptoBank.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("CryptoBank.Features.Authenticate.Domain.UserToken", b =>
+            modelBuilder.Entity("CryptoBank.Features.Authenticate.Domain.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -36,22 +39,49 @@ namespace CryptoBank.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created");
 
+                    b.Property<string>("CreatedByIp")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("created_by_ip");
+
                     b.Property<DateTime>("Expires")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsExpired")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_expired");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_revoked");
+
                     b.Property<string>("ReasonRevoked")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("reason_revoked");
 
-                    b.Property<int?>("ReplacedByTokenId")
-                        .HasColumnType("integer")
-                        .HasColumnName("replaced_by_token_id");
+                    b.Property<string>("ReplacedByToken")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("replaced_by_token");
 
                     b.Property<DateTime?>("Revoked")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked");
+
+                    b.Property<string>("RevokedByIp")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("revoked_by_ip");
 
                     b.Property<string>("Token")
                         .IsRequired()
@@ -65,12 +95,9 @@ namespace CryptoBank.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ReplacedByTokenId")
-                        .IsUnique();
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("user_tokens", "public");
+                    b.ToTable("refresh_tokens", "public");
                 });
 
             modelBuilder.Entity("CryptoBank.Features.Management.Domain.Role", b =>
@@ -186,20 +213,13 @@ namespace CryptoBank.Migrations
                     b.ToTable("news", "public");
                 });
 
-            modelBuilder.Entity("CryptoBank.Features.Authenticate.Domain.UserToken", b =>
+            modelBuilder.Entity("CryptoBank.Features.Authenticate.Domain.RefreshToken", b =>
                 {
-                    b.HasOne("CryptoBank.Features.Authenticate.Domain.UserToken", "RefreshToken")
-                        .WithOne()
-                        .HasForeignKey("CryptoBank.Features.Authenticate.Domain.UserToken", "ReplacedByTokenId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("CryptoBank.Features.Management.Domain.User", "User")
-                        .WithMany("UserTokens")
+                        .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("RefreshToken");
 
                     b.Navigation("User");
                 });
@@ -230,9 +250,9 @@ namespace CryptoBank.Migrations
 
             modelBuilder.Entity("CryptoBank.Features.Management.Domain.User", b =>
                 {
-                    b.Navigation("UserRoles");
+                    b.Navigation("RefreshTokens");
 
-                    b.Navigation("UserTokens");
+                    b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618
         }

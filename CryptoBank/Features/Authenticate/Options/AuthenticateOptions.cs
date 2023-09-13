@@ -2,7 +2,8 @@
 
 public class AuthenticateOptions
 {
-    public JwtOptions Jwt { get; set; }
+    public JwtOptions Jwt { get; set; } = new JwtOptions();
+    public RefreshTokenOptions RefreshToken { get; set; } = new RefreshTokenOptions();
 
     public class JwtOptions
     {
