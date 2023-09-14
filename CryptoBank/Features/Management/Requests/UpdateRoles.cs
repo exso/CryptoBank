@@ -70,22 +70,47 @@ public static class UpdateRoles
                 throw new ValidationErrorsException($"{nameof(user)}", "User not found", UserNotFound);
             }
 
-            var rolesToAdd = await _context.Roles
-                .Where(x => request.RoleIds.Contains(x.Id))
-                .ToArrayAsync(cancellationToken);
+            await RemoveOldRoles(user.Id, cancellationToken);
 
-            foreach (var role in rolesToAdd)
-            {
-                user.UserRoles.Add(new UserRole
-                {
-                    User = user,
-                    Role = role
-                });
-            }
+            await AddNewRoles(user, request.RoleIds, cancellationToken);
 
             await _context.SaveChangesAsync(cancellationToken);
 
             return Unit.Value;
+        }
+
+        private async Task RemoveOldRoles(int userId, CancellationToken cancellationToken)
+        {
+            var rolesToRemove = await _context.UserRoles
+                .Where(x => x.UserId == userId)
+                .ToArrayAsync(cancellationToken);
+
+            if (rolesToRemove.Any())
+            {
+                foreach (var role in rolesToRemove)
+                {
+                    _context.UserRoles.Remove(role);
+                }
+            }   
+        }
+
+        private async Task AddNewRoles(User user, int[] roleIds, CancellationToken cancellationToken)
+        {
+            var rolesToAdd = await _context.Roles
+                .Where(x => roleIds.Contains(x.Id))
+                .ToArrayAsync(cancellationToken);
+
+            if (rolesToAdd.Any())
+            {
+                foreach (var role in rolesToAdd)
+                {
+                    user.UserRoles.Add(new UserRole
+                    {
+                        User = user,
+                        Role = role
+                    });
+                }
+            }
         }
     }
 }
