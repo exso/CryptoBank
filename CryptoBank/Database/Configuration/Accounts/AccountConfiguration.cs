@@ -18,7 +18,7 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(e => e.Currency)
             .IsRequired()
-            .HasMaxLength(10)
+            .HasMaxLength(3)
             .HasColumnName("currency");
 
         builder.Property(e => e.Amount)

@@ -4,6 +4,7 @@ using CryptoBank.Common.Registration;
 using CryptoBank.Database;
 using CryptoBank.Database.Registration;
 using CryptoBank.Errors;
+using CryptoBank.Features.Accounts.Registration;
 using CryptoBank.Features.Authenticate.Registration;
 using CryptoBank.Features.Management.Domain;
 using CryptoBank.Features.Management.Registration;
@@ -39,6 +40,7 @@ builder.AddCommon();
 builder.AddNews();
 builder.AddManagement();
 builder.AddAuthenticate();
+builder.AddAccounts();
 
 builder.Services.AddSingleton<IAuthorizationHandler, RoleRequirementHandler>();
 
@@ -60,7 +62,7 @@ await app.DatabaseMigrate();
 
 await app.SeedDatabase();
 
-app.MapProblemDetails();
+app.MapProblemDetailsWithLogicConflicts();
 
 app.UseAuthentication();
 app.UseAuthorization();

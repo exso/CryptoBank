@@ -1,11 +1,11 @@
 ﻿using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
+using CryptoBank.Features.Accounts.Services;
 using CryptoBank.Pipeline;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 using static CryptoBank.Features.Management.Errors.Codes.UserProfileValidationErrors;
 
@@ -18,23 +18,21 @@ public static class UserProfile
     public class Endpoint : EndpointWithoutRequest<Response>
     {
         private readonly Dispatcher _dispatcher;
-        public Endpoint(Dispatcher dispatcher)
+        private readonly UserIdentifierService _userIdentifierService;
+
+        public Endpoint(Dispatcher dispatcher, UserIdentifierService userIdentifierService)
         {
             _dispatcher = dispatcher;
+            _userIdentifierService = userIdentifierService;
         }
 
         public override async Task<Response> ExecuteAsync(CancellationToken cancellationToken)
         {
-            var identifier = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = _userIdentifierService.GetUserIdentifier();
 
-            if (int.TryParse(identifier, out int userId))
-            {
-                var response = await _dispatcher.Dispatch(new Request(userId), cancellationToken);
+            var response = await _dispatcher.Dispatch(new Request(userId), cancellationToken);
 
-                return response;
-            }
-
-            throw new ValidationErrorsException($"{nameof(identifier)}", "Identifier not found", IdentifierNotFound);
+            return response;
         }
     }
 
