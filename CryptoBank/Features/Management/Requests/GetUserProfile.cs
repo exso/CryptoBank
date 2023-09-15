@@ -11,7 +11,7 @@ using static CryptoBank.Features.Management.Errors.Codes.UserProfileValidationEr
 
 namespace CryptoBank.Features.Management.Requests;
 
-public static class UserProfile
+public static class GetUserProfile
 {
     [HttpGet("/profile")]
     [Authorize]
