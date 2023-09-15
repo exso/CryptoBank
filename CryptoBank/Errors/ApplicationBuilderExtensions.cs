@@ -60,7 +60,25 @@ public static class ApplicationBuilderExtensions
 
                         await context.Response.WriteAsync(JsonSerializer.Serialize(logicConflictProblemDetails));
                         break;
-                    }  
+                    }
+                    default:
+                    {
+                        var internalErrorProblemDetails = new ProblemDetails
+                        {
+                            Title = "Internal server error",
+                            Type = "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+                            Detail = "Interval server error has occured",
+                            Status = StatusCodes.Status500InternalServerError,
+                        };
+
+                        internalErrorProblemDetails.Extensions.Add("traceId", Activity.Current?.Id ?? context.TraceIdentifier);
+
+                        context.Response.ContentType = "application/problem+json";
+                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+                        await context.Response.WriteAsync(JsonSerializer.Serialize(internalErrorProblemDetails));
+                        break;
+                    }                    
                 }
             });
         });
