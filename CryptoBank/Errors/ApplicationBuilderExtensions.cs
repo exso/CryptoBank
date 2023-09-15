@@ -9,7 +9,7 @@ namespace CryptoBank.Errors;
 
 public static class ApplicationBuilderExtensions
 {
-    public static IApplicationBuilder MapProblemDetails(this IApplicationBuilder app)
+    public static IApplicationBuilder MapProblemDetailsWithLogicConflicts(this IApplicationBuilder app)
     {
         app.UseExceptionHandler(builder =>
         {
@@ -18,25 +18,67 @@ public static class ApplicationBuilderExtensions
                 var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>()!;
                 var exception = exceptionHandlerPathFeature.Error;
 
-                if (exception is ValidationErrorsException validationErrorsException)
+                switch (exception)
                 {
-                    var problemDetails = new ProblemDetails
+                    case ValidationErrorsException validationErrorsException:
                     {
-                        Title = "Validation failed",
-                        Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
-                        Detail = validationErrorsException.Message,
-                        Status = StatusCodes.Status400BadRequest,
-                    };
+                        var validationProblemDetails = new ProblemDetails
+                        {
+                            Title = "Validation failed",
+                            Type = "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+                            Detail = validationErrorsException.Message,
+                            Status = StatusCodes.Status400BadRequest,
+                        };
 
-                    problemDetails.Extensions.Add("traceId", Activity.Current?.Id ?? context.TraceIdentifier);
+                        validationProblemDetails.Extensions.Add("traceId", Activity.Current?.Id ?? context.TraceIdentifier);
 
-                    problemDetails.Extensions["errors"] = validationErrorsException.Errors
-                        .Select(x => new ErrorDataWithCode(x.Field, x.Message, x.Code));
+                        validationProblemDetails.Extensions["errors"] = validationErrorsException.Errors
+                            .Select(x => new ErrorDataWithCode(x.Field, x.Message, x.Code));
 
-                    context.Response.ContentType = "application/problem+json";
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        context.Response.ContentType = "application/problem+json";
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
 
-                    await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
+                        await context.Response.WriteAsync(JsonSerializer.Serialize(validationProblemDetails));
+                        break;
+                    }
+                    case LogicConflictException logicConflictException:
+                    {
+                        var logicConflictProblemDetails = new ProblemDetails
+                        {
+                            Title = "Logic conflict",
+                            Type = "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422",
+                            Detail = logicConflictException.Message,
+                            Status = StatusCodes.Status422UnprocessableEntity,
+                        };
+
+                        logicConflictProblemDetails.Extensions.Add("traceId", Activity.Current?.Id ?? context.TraceIdentifier);
+
+                        logicConflictProblemDetails.Extensions["code"] = logicConflictException.Code;
+
+                        context.Response.ContentType = "application/problem+json";
+                        context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+
+                        await context.Response.WriteAsync(JsonSerializer.Serialize(logicConflictProblemDetails));
+                        break;
+                    }
+                    default:
+                    {
+                        var internalErrorProblemDetails = new ProblemDetails
+                        {
+                            Title = "Internal server error",
+                            Type = "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+                            Detail = "Interval server error has occured",
+                            Status = StatusCodes.Status500InternalServerError,
+                        };
+
+                        internalErrorProblemDetails.Extensions.Add("traceId", Activity.Current?.Id ?? context.TraceIdentifier);
+
+                        context.Response.ContentType = "application/problem+json";
+                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+                        await context.Response.WriteAsync(JsonSerializer.Serialize(internalErrorProblemDetails));
+                        break;
+                    }                    
                 }
             });
         });
