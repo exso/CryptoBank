@@ -3,7 +3,7 @@ using System.Security.Claims;
 
 using static CryptoBank.Errors.Codes.ValidationErrorsCode;
 
-namespace CryptoBank.Features.Accounts.Services;
+namespace CryptoBank.Common.Services;
 
 public class UserIdentifierService
 {

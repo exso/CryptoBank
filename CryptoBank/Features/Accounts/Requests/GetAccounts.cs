@@ -1,19 +1,20 @@
 ﻿using CryptoBank.Common.Services;
 using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
+using CryptoBank.Features.Accounts.Models;
 using CryptoBank.Pipeline;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
-using static CryptoBank.Features.Management.Errors.Codes.UserProfileValidationErrors;
+using static CryptoBank.Features.Accounts.Errors.Codes.AccountsValidationErrors;
 
-namespace CryptoBank.Features.Management.Requests;
+namespace CryptoBank.Features.Accounts.Requests;
 
-public static class GetUserProfile
+public static class GetAccounts
 {
-    [HttpGet("/profile")]
+    [HttpGet("/getAccounts")]
     [Authorize]
     public class Endpoint : EndpointWithoutRequest<Response>
     {
@@ -38,16 +39,12 @@ public static class GetUserProfile
 
     public record Request(int UserId) : IRequest<Response>;
 
-    public record Response(
-        int Id, 
-        string Email, 
-        DateTime DateOfBirth, 
-        DateTime DateOfRegistration,
-        string[] UserRoles);
+    public record Response(AccountsModel[] Accounts);
 
     public class RequestHandler : IRequestHandler<Request, Response>
     {
         private readonly Context _context;
+
         public RequestHandler(Context context)
         {
             _context = context;
@@ -55,22 +52,24 @@ public static class GetUserProfile
 
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
         {
-            var user = await _context.Users
-                .Include(x => x.UserRoles)
-                .ThenInclude(x => x.Role)
-                .Where(x => x.Id == request.UserId)
-                .Select(x => new Response(
-                    x.Id, 
-                    x.Email, 
-                    x.DateOfBirth, 
-                    x.DateOfRegistration, 
-                    x.UserRoles.Select(x => x.Role.Name).ToArray()
-                ))
-                .SingleOrDefaultAsync(cancellationToken);
+            var accounts = await _context.Accounts
+                .Where(x => x.UserId == request.UserId)
+                .Select(x => new AccountsModel
+                {
+                    Number = x.Number,
+                    Currency = x.Currency,
+                    Amount = x.Amount,
+                    DateOfOpening = x.DateOfOpening,
+                    UserEmail = x.User.Email
+                })
+                .ToArrayAsync(cancellationToken);
 
-            return user is null
-                ? throw new ValidationErrorsException($"{nameof(user)}", "User not found", UserNotFound)
-                : user;
+            if (!accounts.Any())
+            {
+                throw new ValidationErrorsException($"{nameof(accounts)}", "Accounts not found", AccountsNotFound);
+            }
+
+            return new Response(accounts);
         }
     }
 }
