@@ -1,14 +1,11 @@
 ﻿using CryptoBank.Common.Services;
 using CryptoBank.Database;
-using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Accounts.Models;
 using CryptoBank.Pipeline;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-
-using static CryptoBank.Features.Accounts.Errors.Codes.AccountsValidationErrors;
 
 namespace CryptoBank.Features.Accounts.Requests;
 
@@ -63,11 +60,6 @@ public static class GetAccounts
                     UserEmail = x.User.Email
                 })
                 .ToArrayAsync(cancellationToken);
-
-            if (!accounts.Any())
-            {
-                throw new ValidationErrorsException($"{nameof(accounts)}", "Accounts not found", AccountsNotFound);
-            }
 
             return new Response(accounts);
         }
