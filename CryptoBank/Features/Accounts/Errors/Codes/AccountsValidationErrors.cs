@@ -6,5 +6,5 @@ public static class AccountsValidationErrors
 
     public const string UserNotFound = Prefix + "user_not_found";
     public const string AccountsNotFound = Prefix + "accounts_not_found";
-    public const string DataNotFound = Prefix + "data_not_found";
+    public const string StartDateMustBeBeforeEndDate = Prefix + "start_date_must_be_before_end_date";
 }

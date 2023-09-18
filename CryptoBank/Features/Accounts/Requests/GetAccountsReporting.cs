@@ -1,6 +1,5 @@
 ﻿using CryptoBank.Authorization;
 using CryptoBank.Database;
-using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Accounts.Models;
 using CryptoBank.Pipeline;
 using FastEndpoints;
@@ -39,7 +38,8 @@ public static class GetAccountsReporting
         public RequestValidator()
         {
             RuleFor(x => x.StartDate)
-                .NotEmpty();
+                .NotEmpty()
+                .LessThan(x => x.EndDate).WithErrorCode(StartDateMustBeBeforeEndDate);
 
             RuleFor(x => x.EndDate)
                 .NotEmpty();
@@ -74,11 +74,6 @@ public static class GetAccountsReporting
                     Report = $"{x.Period:dd.MM.yyyy} - {x.Count} accounts"
                 })
                 .ToArrayAsync(cancellationToken);
-
-            if (!report.Any())
-            {
-                throw new ValidationErrorsException($"{nameof(report)}", "Data not found", DataNotFound);
-            }
 
             return new Response(report);
         }
