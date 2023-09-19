@@ -1,8 +1,8 @@
-﻿using CryptoBank.Database;
+﻿using CryptoBank.Common.Services;
+using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Accounts.Domain;
 using CryptoBank.Features.Accounts.Options;
-using CryptoBank.Features.Accounts.Services;
 using CryptoBank.Pipeline;
 using FastEndpoints;
 using FluentValidation;
@@ -13,6 +13,7 @@ using Microsoft.Extensions.Options;
 using System.Net;
 
 using static CryptoBank.Features.Accounts.Errors.Codes.AccountsLogicConflictErrors;
+using static CryptoBank.Features.Accounts.Errors.Codes.AccountsValidationErrors;
 
 namespace CryptoBank.Features.Accounts.Requests;
 
