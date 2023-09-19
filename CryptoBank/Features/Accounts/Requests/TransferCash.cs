@@ -2,6 +2,7 @@
 using CryptoBank.Errors.Exceptions;
 using CryptoBank.Pipeline;
 using CryptoBank.Features.Accounts.Domain;
+using CryptoBank.Validation;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -41,15 +42,8 @@ public static class TransferCash
     {
         public RequestValidator()
         {
-            RuleFor(x => x.FromNumber)
-                .NotEmpty()
-                .MinimumLength(30)
-                .MaximumLength(256);
-
-            RuleFor(x => x.ToNumber)
-                .NotEmpty()
-                .MinimumLength(30)
-                .MaximumLength(256);
+            RuleFor(x => x.FromNumber).ValidNumber();
+            RuleFor(x => x.ToNumber).ValidNumber();
 
             RuleFor(x => x.Amount)
                 .NotEmpty()
@@ -74,9 +68,9 @@ public static class TransferCash
 
             await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
 
-            await UpdateAccounts(fromAccount.Number, fromAmount, cancellationToken);
+            await UpdateAccount(fromAccount.Number, fromAmount, cancellationToken);
 
-            await UpdateAccounts(toAccount.Number, toAmount, cancellationToken);
+            await UpdateAccount(toAccount.Number, toAmount, cancellationToken);
 
             await tx.CommitAsync(cancellationToken);
 
@@ -106,7 +100,7 @@ public static class TransferCash
             return (fromAccount, toAccount);
         }
 
-        private static async Task<(decimal fromAmount, decimal toAmount)> CreateTransaction(
+        private static Task<(decimal fromAmount, decimal toAmount)> CreateTransaction(
             decimal fromAccountAmount,
             decimal toAccountAmount,
             decimal amount)
@@ -115,12 +109,12 @@ public static class TransferCash
 
             var toAmount = Decimal.Add(toAccountAmount, amount);
 
-            await Task.Delay(1000);
+            var transaction = (fromAmount, toAmount);
 
-            return (fromAmount, toAmount);
+            return Task.FromResult(transaction);
         }
 
-        private async Task UpdateAccounts(string number, decimal amount, CancellationToken cancellationToken)
+        private async Task UpdateAccount(string number, decimal amount, CancellationToken cancellationToken)
         {
             await _context.Accounts
                 .Where(x => x.Number == number)
