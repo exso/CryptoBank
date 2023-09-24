@@ -1,7 +1,9 @@
 ﻿using CryptoBank.Common.Passwords;
 using CryptoBank.Database;
 using CryptoBank.Features.Accounts.Requests;
+using CryptoBank.Features.Management.Domain;
 using CryptoBank.Tests.Integration.Common;
+using CryptoBank.Tests.Integration.Errors.Contracts;
 using CryptoBank.Tests.Integration.Helpers;
 using FluentAssertions;
 using FluentValidation.TestHelper;
@@ -37,14 +39,12 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
 
         // Act
-        var response = await client.PostAsJsonAsync("/createAccount", new
+        var response = (await client.PostAsJsonAsync("/createAccount", new
         {
             Currency = "BTC",
             Amount = 100,
             UserId = user.Id
-        });
-
-        response.EnsureSuccessStatusCode();
+        })).EnsureSuccessStatusCode();
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -76,6 +76,51 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task Should_user_not_found()
+    {
+        // Arrange
+        var user = new User
+        {
+            Email = "me@example.com",
+            Password = _passwordHasher.HashPassword("12345678"),
+            DateOfBirth = new DateTime(2000, 01, 31).ToUniversalTime(),
+            DateOfRegistration = DateTime.UtcNow,
+            UserRoles = new List<UserRole>()
+            {
+                new()
+                {
+                    Role = new Role
+                    {
+                        Name = "User", Description = "Обычный пользователь"
+                    }
+                }
+            }
+        };
+
+        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
+
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+
+        // Act
+        var response = await client.PostAsJsonAsync("/createAccount", new
+        {
+            Currency = "BTC",
+            Amount = 100,
+            UserId = user.Id
+        });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var validationProblemDetails = await response.Content.ReadFromJsonAsync<ValidationProblemDetailsContract>();
+        validationProblemDetails.Should().NotBeNull();
+
+        var error = validationProblemDetails!.Errors.Single();
+        error.Code.Should().Be("accounts_validation_user_not_found");
+    }
+
     public Task InitializeAsync()
     {
         var _ = _factory.Server;
@@ -88,6 +133,7 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
 
     public async Task DisposeAsync()
     {
+        _context.Accounts.RemoveRange(_context.Accounts);
         _context.UserRoles.RemoveRange(_context.UserRoles);
         _context.Roles.RemoveRange(_context.Roles);
         _context.Users.RemoveRange(_context.Users);
@@ -98,16 +144,15 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
     }
 }
 
-public class CreateAccountValidatorTests : IClassFixture<BaseWebAppFactory<Program>>, IAsyncLifetime
+public class CreateAccountValidatorTests
 {
-    private readonly BaseWebAppFactory<Program> _factory;
-    private Context _context;
-    private AsyncServiceScope _scope;
-    private CreateAccount.RequestValidator _validator;
+    private readonly CreateAccount.RequestValidator _validator = new();
 
-    public CreateAccountValidatorTests(BaseWebAppFactory<Program> factory)
+    [Fact]
+    public void Should_validate_correct_request()
     {
-        _factory = factory;   
+        var result = _validator.TestValidate(new CreateAccount.Request("BTC", 100, 1));
+        result.ShouldNotHaveAnyValidationErrors();
     }
 
     [Theory]
@@ -141,26 +186,5 @@ public class CreateAccountValidatorTests : IClassFixture<BaseWebAppFactory<Progr
     {
         var result = await _validator.TestValidateAsync(new CreateAccount.Request("BTC", 0, 1));
         result.ShouldHaveValidationErrorFor(x => x.Amount).WithErrorCode("NotEmptyValidator");
-    }
-
-    public Task InitializeAsync()
-    {
-        var _ = _factory.Server;
-        _scope = _factory.Services.CreateAsyncScope();
-        _context = _scope.ServiceProvider.GetRequiredService<Context>();
-        _validator = new CreateAccount.RequestValidator();
-
-        return Task.CompletedTask;
-    }
-
-    public async Task DisposeAsync()
-    {
-        _context.UserRoles.RemoveRange(_context.UserRoles);
-        _context.Roles.RemoveRange(_context.Roles);
-        _context.Users.RemoveRange(_context.Users);
-
-        await _context.SaveChangesAsync();
-        await _context.DisposeAsync();
-        await _scope.DisposeAsync();
     }
 }
