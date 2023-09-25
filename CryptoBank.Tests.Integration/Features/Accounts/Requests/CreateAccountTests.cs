@@ -38,11 +38,14 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
 
+        var currency = "BTC";
+        var amount = 100;
+
         // Act
         var response = (await client.PostAsJsonAsync("/createAccount", new
         {
-            Currency = "BTC",
-            Amount = 100,
+            Currency = currency,
+            Amount = amount,
             UserId = user.Id
         })).EnsureSuccessStatusCode();
 
@@ -51,6 +54,9 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
 
         var account = await _context.Accounts.SingleOrDefaultAsync(x => x.UserId == user.Id);
         account.Should().NotBeNull();
+        account!.Currency.Should().Be(currency);
+        account.Amount.Should().Be(amount);
+        account.UserId.Should().Be(user.Id);
     }
 
     [Fact]
