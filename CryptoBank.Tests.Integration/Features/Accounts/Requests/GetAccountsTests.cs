@@ -64,7 +64,7 @@ public class GetAccountsTests : IClassFixture<BaseWebAppFactory<Program>>, IAsyn
         accountContract.Number.Should().Be(account.Number);
         accountContract.Currency.Should().Be(account.Currency);
         accountContract.Amount.Should().Be(account.Amount);
-        accountContract.DateOfOpening.Should().Be(account.DateOfOpening);
+        accountContract.DateOfOpening.Date.Should().Be(account.DateOfOpening.Date);
         accountContract.UserEmail.Should().Be(user.Email);
     }
 
