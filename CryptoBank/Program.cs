@@ -70,3 +70,5 @@ app.UseAuthorization();
 app.MapFastEndpoints();
 
 app.Run();
+
+public partial class Program { }
