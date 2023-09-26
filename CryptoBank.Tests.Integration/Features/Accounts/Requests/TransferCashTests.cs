@@ -71,7 +71,7 @@ public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsy
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var account = await _context.Accounts.SingleOrDefaultAsync(x => x.Number == account2.Number);
+        var account = await _context.Accounts.AsNoTracking().SingleOrDefaultAsync(x => x.Number == account2.Number);
         account.Should().NotBeNull();
         account!.Number.Should().Be(account2.Number);
         account.Currency.Should().Be(currency);
