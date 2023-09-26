@@ -148,7 +148,6 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
         _context.Roles.RemoveRange(_context.Roles);
         _context.Users.RemoveRange(_context.Users);
 
-        await _context.SaveChangesAsync();
         await _context.DisposeAsync();
         await _scope.DisposeAsync();
     }

@@ -9,8 +9,8 @@ using FluentAssertions;
 using CryptoBank.Features.Accounts.Requests;
 using FluentValidation.TestHelper;
 using CryptoBank.Tests.Integration.Helpers;
-using CryptoBank.Features.Accounts.Domain;
 using Microsoft.EntityFrameworkCore;
+using CryptoBank.Errors.Exceptions;
 
 namespace CryptoBank.Tests.Integration.Features.Accounts.Requests;
 
@@ -34,25 +34,10 @@ public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsy
 
         var currency = "BTC";
         var amount = Decimal.Add(100, 100);
+        decimal fromAmount = 1000;
+        decimal toAmount = 100;
 
-        var account1 = new Account
-        {
-            Number = "541e377c-9a38-46a5-a02c-0720dcc4cc2e",
-            Currency = currency,
-            Amount = 1000,
-            DateOfOpening = DateTime.Now.ToUniversalTime()
-        };
-
-        var account2 = new Account
-        {
-            Number = "a53a4971-2ac7-4f89-9734-84dee9fa1d92",
-            Currency = currency,
-            Amount = 100,
-            DateOfOpening = DateTime.Now.ToUniversalTime()
-        };
-
-        user.UserAccounts.Add(account1);
-        user.UserAccounts.Add(account2);
+        var (account1, account2) = AccountsHelper.CreateAccounts(user, currency, fromAmount, toAmount);
         await _context.SaveChangesAsync();
 
         var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
@@ -77,6 +62,40 @@ public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsy
         account.Currency.Should().Be(currency);
         account.Amount.Should().Be(amount);
         account.UserId.Should().Be(user.Id);
+    }
+
+    [Fact]
+    public async Task Should_insufficient_amount_in_the_account()
+    {
+        // Arrange
+        var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
+
+        var currency = "BTC";
+        decimal fromAmount = 100;
+        decimal toAmount = 100;
+
+        var (account1, account2) = AccountsHelper.CreateAccounts(user, currency, fromAmount, toAmount);
+        await _context.SaveChangesAsync();
+
+        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
+
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+
+        // Act
+        var response = await client.PostAsJsonAsync("/transferCash", new
+        {
+            FromNumber = account1.Number,
+            ToNumber = account2.Number,
+            Amount = 200
+        });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        var logicConflictException = await response.Content.ReadFromJsonAsync<LogicConflictException>();
+        logicConflictException.Should().NotBeNull();
+        logicConflictException!.Code.Should().Be("accounts_logic_confict_insufficient_amount_in_the_account");
     }
 
     [Fact]
