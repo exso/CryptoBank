@@ -33,6 +33,8 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
         // Arrange
         var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
 
+        await _context.SaveChangesAsync();
+
         var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
 
         var client = _factory.CreateClient();
@@ -64,6 +66,8 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
     {
         // Arrange
         var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
+
+        await _context.SaveChangesAsync();
 
         var jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwia";
 
