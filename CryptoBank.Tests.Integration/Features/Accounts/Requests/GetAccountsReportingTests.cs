@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using CryptoBank.Features.Management.Domain;
 using CryptoBank.Features.Accounts.Requests;
 using FluentValidation.TestHelper;
+using System.Text.Json;
 
 namespace CryptoBank.Tests.Integration.Features.Accounts.Requests;
 
@@ -44,7 +45,7 @@ public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program
         // Act
         var response = (await client.PostAsJsonAsync("/accountsReporting", new
         {
-            StartDate = DateTime.Now.ToUniversalTime(),
+            StartDate = DateTime.Now.AddDays(-2).ToUniversalTime(),
             EndDate = DateTime.Now.ToUniversalTime()
         })).EnsureSuccessStatusCode();
 
@@ -56,6 +57,15 @@ public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program
 
         var accountContract2 = await _context.Accounts.SingleOrDefaultAsync(x => x.Number == account2.Number);
         AccountsHelper.AssertAccount(accountContract2!, account2);
+
+        var content = await response.Content.ReadAsStringAsync();
+        var contract = JsonSerializer.Deserialize<GetAccountsReporting.Response>(content, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        });
+
+        contract!.Entity.Should().NotBeNull();
+        contract.Entity.Should().HaveCount(1);
     }
 
     [Fact]
@@ -147,5 +157,25 @@ public class GetAccountsReportingValidatorTests
         var result = await _validator.TestValidateAsync(new GetAccountsReporting.Request(startDate, endDate));
         result.ShouldHaveValidationErrorFor(x => x.StartDate)
             .WithErrorCode("accounts_validation_start_date_must_be_before_end_date");
+    }
+
+    [Fact]
+    public async Task Should_require_start_date()
+    {
+        var startDate = DateTime.MinValue;
+        var endDate = DateTime.Now.ToUniversalTime();
+
+        var result = await _validator.TestValidateAsync(new GetAccountsReporting.Request(startDate, endDate));
+        result.ShouldHaveValidationErrorFor(x => x.StartDate).WithErrorCode("accounts_validation_date_not_empty");
+    }
+
+    [Fact]
+    public async Task Should_require_end_date()
+    {
+        var startDate = DateTime.Now.ToUniversalTime();
+        var endDate = DateTime.MinValue;
+
+        var result = await _validator.TestValidateAsync(new GetAccountsReporting.Request(startDate, endDate));
+        result.ShouldHaveValidationErrorFor(x => x.EndDate).WithErrorCode("accounts_validation_date_not_empty");
     }
 }
