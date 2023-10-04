@@ -2,6 +2,7 @@
 using CryptoBank.Database;
 using CryptoBank.Features.Accounts.Models;
 using CryptoBank.Pipeline;
+using CryptoBank.Validation;
 using FastEndpoints;
 using FluentValidation;
 using MediatR;
@@ -37,12 +38,10 @@ public static class GetAccountsReporting
     {
         public RequestValidator()
         {
-            RuleFor(x => x.StartDate)
-                .NotEmpty()
+            RuleFor(x => x.StartDate).ValidDate()
                 .LessThan(x => x.EndDate).WithErrorCode(StartDateMustBeBeforeEndDate);
 
-            RuleFor(x => x.EndDate)
-                .NotEmpty();
+            RuleFor(x => x.EndDate).ValidDate();
         }
     }
 

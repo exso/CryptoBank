@@ -1,5 +1,7 @@
 ﻿using FluentValidation;
 
+using static CryptoBank.Features.Accounts.Errors.Codes.AccountsValidationErrors;
+
 namespace CryptoBank.Validation;
 
 public static class RuleBuilderOptionsExtensions
@@ -10,5 +12,11 @@ public static class RuleBuilderOptionsExtensions
             .NotEmpty()
             .MinimumLength(30)
             .MaximumLength(256);
+    }
+
+    public static IRuleBuilderOptions<T, DateTime> ValidDate<T>(this IRuleBuilder<T, DateTime> builder)
+    {
+        return builder
+            .NotEmpty().WithErrorCode(DateNotEmpty);
     }
 }
