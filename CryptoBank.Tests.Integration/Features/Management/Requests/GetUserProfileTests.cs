@@ -27,20 +27,7 @@ public class GetUserProfileTests : IAsyncLifetime
     public async Task Should_get_user_profile()
     {
         // Arrange
-        var passwordHasher = _scope.ServiceProvider.GetRequiredService<Argon2IdPasswordHasher>();
-
-        var user = UserHelper.CreateUser("me@example.com", passwordHasher.HashPassword("12345678"));
-
-        await _fixture.Database.Execute(async x =>
-        {
-            x.Users.Add(user);
-            await x.SaveChangesAsync();
-        });
-
-        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
-
-        var client = _fixture.HttpClient.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
 
         // Act
         var response = await client.GetFromJsonAsync<GetUserProfile.Response>("/profile");
@@ -54,13 +41,10 @@ public class GetUserProfileTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Should_invalid_token()
+    public async Task Should_forbid_if_invalid_token()
     {
         // Arrange
-        var jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwia";
-
-        var client = _fixture.HttpClient.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        var (client, _) = await _fixture.HttpClient.CreateWronglyAuthenticatedClient(Create.CancellationToken());
 
         // Act
         var response = await client.GetAsync("/profile");
@@ -70,7 +54,7 @@ public class GetUserProfileTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Should_user_not_found()
+    public async Task Should_return_bad_request_if_user_not_found()
     {
         // Arrange
         var passwordHasher = _scope.ServiceProvider.GetRequiredService<Argon2IdPasswordHasher>();
