@@ -31,7 +31,8 @@ public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program
     public async Task Should_get_accounts_reporting()
     {
         // Arrange
-        var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
+        var user = UserHelper.CreateUser("me@example.com", "12345678");
+        await _context.Users.AddAsync(user);
         user.UserRoles.Add(new UserRole { Role = new() { Name = "Analyst", Description = "Аналитик" } });
 
         var (account1, account2) = AccountsHelper.CreateAccounts(user, "BTC", 100);
@@ -72,8 +73,8 @@ public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program
     public async Task Should_wrong_role()
     {
         // Arrange
-        var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
-
+        var user = UserHelper.CreateUser("me@example.com", "12345678");
+        await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
         var jwt = AuthenticateHelper.GetAccessToken(user, _scope);

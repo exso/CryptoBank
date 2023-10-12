@@ -30,7 +30,8 @@ public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsy
     public async Task Should_transfer_cash()
     {
         // Arrange
-        var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
+        var user = UserHelper.CreateUser("me@example.com", "12345678");
+        await _context.Users.AddAsync(user);
 
         var currency = "BTC";
         var amount = Decimal.Add(100, 100);
@@ -68,7 +69,8 @@ public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsy
     public async Task Should_insufficient_amount_in_the_account()
     {
         // Arrange
-        var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
+        var user = UserHelper.CreateUser("me@example.com", "12345678");
+        await _context.Users.AddAsync(user);
 
         var currency = "BTC";
         decimal fromAmount = 100;

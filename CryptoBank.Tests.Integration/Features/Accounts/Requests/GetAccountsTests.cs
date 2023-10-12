@@ -28,7 +28,8 @@ public class GetAccountsTests : IClassFixture<BaseWebAppFactory<Program>>, IAsyn
     public async Task Should_get_accounts()
     {
         // Arrange
-        var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
+        var user = UserHelper.CreateUser("me@example.com", "12345678");
+        await _context.Users.AddAsync(user);
 
         var account = new Account
         {

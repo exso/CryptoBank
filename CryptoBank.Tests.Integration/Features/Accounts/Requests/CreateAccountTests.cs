@@ -31,8 +31,8 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
     public async Task Should_create_account()
     {
         // Arrange
-        var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
-
+        var user = UserHelper.CreateUser("me@example.com", "12345678");
+        await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
         var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
@@ -65,8 +65,8 @@ public class CreateAccountTests : IClassFixture<BaseWebAppFactory<Program>>, IAs
     public async Task Should_invalid_token()
     {
         // Arrange
-        var user = await new UserHelper(_context, _passwordHasher).CreateUser("me@example.com", "12345678");
-
+        var user = UserHelper.CreateUser("me@example.com", "12345678");
+        await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
         var jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwia";
