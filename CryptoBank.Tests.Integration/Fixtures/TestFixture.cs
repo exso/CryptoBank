@@ -30,6 +30,8 @@ public class TestFixture : IAsyncLifetime
         await HttpClient.Start(_factory, Create.CancellationToken());
 
         var _ = _factory.Server;
+
+        await Database.Migrate(Create.CancellationToken());
     }
 
     public async Task DisposeAsync()
