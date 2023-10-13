@@ -1,8 +1,4 @@
-﻿using CryptoBank.Common.Passwords;
-using CryptoBank.Database;
-using CryptoBank.Tests.Integration.Common;
-using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http.Headers;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using System.Net;
 using FluentAssertions;
@@ -12,36 +8,43 @@ using CryptoBank.Features.Management.Domain;
 using CryptoBank.Features.Accounts.Requests;
 using FluentValidation.TestHelper;
 using System.Text.Json;
+using CryptoBank.Tests.Integration.Fixtures;
 
 namespace CryptoBank.Tests.Integration.Features.Accounts.Requests;
 
-public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program>>, IAsyncLifetime
+[Collection(AccountsTestsCollection.Name)]
+public class GetAccountsReportingTests : IAsyncLifetime
 {
-    private readonly BaseWebAppFactory<Program> _factory;
-    private Context _context;
-    private AsyncServiceScope _scope;
-    private Argon2IdPasswordHasher _passwordHasher;
+    private readonly TestFixture _fixture;
 
-    public GetAccountsReportingTests(BaseWebAppFactory<Program> factory)
+    private AsyncServiceScope _scope;
+
+    public GetAccountsReportingTests(TestFixture fixture)
     {
-        _factory = factory;
+        _fixture = fixture;
     }
 
     [Fact]
     public async Task Should_get_accounts_reporting()
     {
         // Arrange
-        var user = UserHelper.CreateUser("me@example.com", "12345678");
-        await _context.Users.AddAsync(user);
+        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
+
         user.UserRoles.Add(new UserRole { Role = new() { Name = "Analyst", Description = "Аналитик" } });
 
+        await _fixture.Database.Execute(async x =>
+        {
+            x.Users.Add(user);
+            await x.SaveChangesAsync();
+        });
+
         var (account1, account2) = AccountsHelper.CreateAccounts(user, "BTC", 100);
-        await _context.SaveChangesAsync();
 
-        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
-
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        await _fixture.Database.Execute(async x =>
+        {
+            x.Accounts.AddRange(account1, account2);
+            await x.SaveChangesAsync();
+        });
 
         // Act
         var response = (await client.PostAsJsonAsync("/accountsReporting", new
@@ -53,10 +56,14 @@ public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var accountContract1 = await _context.Accounts.SingleOrDefaultAsync(x => x.Number == account1.Number);
+        var accountContract1 = await _fixture.Database.Execute(async x =>
+            await x.Accounts.SingleOrDefaultAsync(u => u.Number == account1.Number));
+
         AccountsHelper.AssertAccount(accountContract1!, account1);
 
-        var accountContract2 = await _context.Accounts.SingleOrDefaultAsync(x => x.Number == account2.Number);
+        var accountContract2 = await _fixture.Database.Execute(async x =>
+            await x.Accounts.SingleOrDefaultAsync(u => u.Number == account2.Number));
+
         AccountsHelper.AssertAccount(accountContract2!, account2);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -70,17 +77,10 @@ public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program
     }
 
     [Fact]
-    public async Task Should_wrong_role()
+    public async Task Should_return_forbidden_if_wrong_role()
     {
         // Arrange
-        var user = UserHelper.CreateUser("me@example.com", "12345678");
-        await _context.Users.AddAsync(user);
-        await _context.SaveChangesAsync();
-
-        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
-
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        var (client, _) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
 
         // Act
         var response = await client.PostAsJsonAsync("/accountsReporting", new
@@ -94,13 +94,10 @@ public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program
     }
 
     [Fact]
-    public async Task Should_invalid_token()
+    public async Task Should_forbid_if_invalid_token()
     {
         // Arrange
-        var jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwia";
-
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        var (client, _) = await _fixture.HttpClient.CreateWronglyAuthenticatedClient(Create.CancellationToken());
 
         // Act
         var response = await client.PostAsJsonAsync("/accountsReporting", new
@@ -113,24 +110,15 @@ public class GetAccountsReportingTests : IClassFixture<BaseWebAppFactory<Program
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        var _ = _factory.Server;
-        _scope = _factory.Services.CreateAsyncScope();
-        _context = _scope.ServiceProvider.GetRequiredService<Context>();
-        _passwordHasher = _scope.ServiceProvider.GetRequiredService<Argon2IdPasswordHasher>();
+        await _fixture.Database.Clear(Create.CancellationToken());
 
-        return Task.CompletedTask;
+        _scope = _fixture.Factory.Services.CreateAsyncScope();
     }
 
     public async Task DisposeAsync()
     {
-        _context.Accounts.RemoveRange(_context.Accounts);
-        _context.UserRoles.RemoveRange(_context.UserRoles);
-        _context.Roles.RemoveRange(_context.Roles);
-        _context.Users.RemoveRange(_context.Users);
-
-        await _context.DisposeAsync();
         await _scope.DisposeAsync();
     }
 }

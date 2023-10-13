@@ -1,8 +1,4 @@
-﻿using CryptoBank.Common.Passwords;
-using CryptoBank.Database;
-using CryptoBank.Tests.Integration.Common;
-using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http.Headers;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using System.Net;
 using FluentAssertions;
@@ -11,40 +7,40 @@ using FluentValidation.TestHelper;
 using CryptoBank.Tests.Integration.Helpers;
 using Microsoft.EntityFrameworkCore;
 using CryptoBank.Errors.Exceptions;
+using CryptoBank.Tests.Integration.Fixtures;
 
 namespace CryptoBank.Tests.Integration.Features.Accounts.Requests;
 
-public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsyncLifetime
+[Collection(AccountsTestsCollection.Name)]
+public class TransferCashTests : IAsyncLifetime
 {
-    private readonly BaseWebAppFactory<Program> _factory;
-    private Context _context;
-    private AsyncServiceScope _scope;
-    private Argon2IdPasswordHasher _passwordHasher;
+    private readonly TestFixture _fixture;
 
-    public TransferCashTests(BaseWebAppFactory<Program> factory)
+    private AsyncServiceScope _scope;
+
+    public TransferCashTests(TestFixture fixture)
     {
-        _factory = factory;
+        _fixture = fixture;
     }
 
     [Fact]
     public async Task Should_transfer_cash()
     {
         // Arrange
-        var user = UserHelper.CreateUser("me@example.com", "12345678");
-        await _context.Users.AddAsync(user);
+        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
 
         var currency = "BTC";
         var amount = Decimal.Add(100, 100);
         decimal fromAmount = 1000;
         decimal toAmount = 100;
 
-        var (account1, account2) = AccountsHelper.CreateAccounts(user, currency, fromAmount, toAmount);
-        await _context.SaveChangesAsync();
+        var (currentUser, account1, account2) = AccountsHelper.CreateAccounts(user, currency, fromAmount, toAmount);
 
-        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
-
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        await _fixture.Database.Execute(async x =>
+        {
+            x.Users.Add(currentUser);
+            await x.SaveChangesAsync();
+        });
 
         // Act
         var response = (await client.PostAsJsonAsync("/transferCash", new
@@ -57,32 +53,34 @@ public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsy
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var account = await _context.Accounts.AsNoTracking().SingleOrDefaultAsync(x => x.Number == account2.Number);
-        account.Should().NotBeNull();
-        account!.Number.Should().Be(account2.Number);
-        account.Currency.Should().Be(currency);
-        account.Amount.Should().Be(amount);
-        account.UserId.Should().Be(user.Id);
+        var accountContract1 = await _fixture.Database.Execute(async x =>
+            await x.Accounts.SingleOrDefaultAsync(u => u.Number == account1.Number));
+
+        AccountsHelper.AssertAccount(accountContract1!, account1);
+
+        var accountContract2 = await _fixture.Database.Execute(async x =>
+            await x.Accounts.SingleOrDefaultAsync(u => u.Number == account2.Number));
+
+        AccountsHelper.AssertAccount(accountContract2!, account2);
     }
 
     [Fact]
     public async Task Should_insufficient_amount_in_the_account()
     {
         // Arrange
-        var user = UserHelper.CreateUser("me@example.com", "12345678");
-        await _context.Users.AddAsync(user);
+        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
 
         var currency = "BTC";
         decimal fromAmount = 100;
         decimal toAmount = 100;
 
-        var (account1, account2) = AccountsHelper.CreateAccounts(user, currency, fromAmount, toAmount);
-        await _context.SaveChangesAsync();
+        var (currentUser, account1, account2) = AccountsHelper.CreateAccounts(user, currency, fromAmount, toAmount);
 
-        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
-
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        await _fixture.Database.Execute(async x =>
+        {
+            x.Users.Add(currentUser);
+            await x.SaveChangesAsync();
+        });
 
         // Act
         var response = await client.PostAsJsonAsync("/transferCash", new
@@ -101,13 +99,10 @@ public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsy
     }
 
     [Fact]
-    public async Task Should_invalid_token()
+    public async Task Should_forbid_if_invalid_token()
     {
         // Arrange
-        var jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwia";
-
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        var (client, _) = await _fixture.HttpClient.CreateWronglyAuthenticatedClient(Create.CancellationToken());
 
         // Act
         var response = await client.PostAsJsonAsync("/transferCash", new
@@ -121,25 +116,15 @@ public class TransferCashTests : IClassFixture<BaseWebAppFactory<Program>>, IAsy
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        var _ = _factory.Server;
-        _scope = _factory.Services.CreateAsyncScope();
-        _context = _scope.ServiceProvider.GetRequiredService<Context>();
-        _passwordHasher = _scope.ServiceProvider.GetRequiredService<Argon2IdPasswordHasher>();
+        await _fixture.Database.Clear(Create.CancellationToken());
 
-        return Task.CompletedTask;
+        _scope = _fixture.Factory.Services.CreateAsyncScope();
     }
 
     public async Task DisposeAsync()
     {
-        _context.Accounts.RemoveRange(_context.Accounts);
-        _context.UserRoles.RemoveRange(_context.UserRoles);
-        _context.Roles.RemoveRange(_context.Roles);
-        _context.Users.RemoveRange(_context.Users);
-
-        await _context.SaveChangesAsync();
-        await _context.DisposeAsync();
         await _scope.DisposeAsync();
     }
 }

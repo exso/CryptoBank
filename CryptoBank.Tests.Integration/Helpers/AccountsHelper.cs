@@ -6,7 +6,7 @@ namespace CryptoBank.Tests.Integration.Helpers;
 
 public static class AccountsHelper
 {
-    public static (Account account1, Account account2) CreateAccounts(
+    public static (User user, Account account1, Account account2) CreateAccounts(
         User user,
         string currency,
         decimal fromAmount,
@@ -31,7 +31,7 @@ public static class AccountsHelper
         user.UserAccounts.Add(account1);
         user.UserAccounts.Add(account2);
 
-        return (account1, account2);
+        return (user, account1, account2);
     }
 
     public static (Account account1, Account account2) CreateAccounts(
