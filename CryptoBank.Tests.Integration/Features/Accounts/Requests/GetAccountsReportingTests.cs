@@ -4,11 +4,12 @@ using System.Net;
 using FluentAssertions;
 using CryptoBank.Tests.Integration.Helpers;
 using Microsoft.EntityFrameworkCore;
-using CryptoBank.Features.Management.Domain;
 using CryptoBank.Features.Accounts.Requests;
 using FluentValidation.TestHelper;
 using System.Text.Json;
 using CryptoBank.Tests.Integration.Fixtures;
+using System.Net.Http.Headers;
+using CryptoBank.Features.Management.Domain;
 
 namespace CryptoBank.Tests.Integration.Features.Accounts.Requests;
 
@@ -28,9 +29,11 @@ public class GetAccountsReportingTests : IAsyncLifetime
     public async Task Should_get_accounts_reporting()
     {
         // Arrange
-        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
+        var user = UserHelper.CreateUser($"{Guid.NewGuid()}@test.com", Guid.NewGuid().ToString());
 
-        user.UserRoles.Add(new UserRole { Role = new() { Name = "Analyst", Description = "Аналитик" } });
+        user.UserRoles.Add(new() { Role = new Role { Name = "Analyst", Description = "Аналитик" }});
+
+        var (account1, account2) = AccountsHelper.CreateAccounts(user, "BTC", 100);
 
         await _fixture.Database.Execute(async x =>
         {
@@ -38,13 +41,10 @@ public class GetAccountsReportingTests : IAsyncLifetime
             await x.SaveChangesAsync();
         });
 
-        var (account1, account2) = AccountsHelper.CreateAccounts(user, "BTC", 100);
+        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
 
-        await _fixture.Database.Execute(async x =>
-        {
-            x.Accounts.AddRange(account1, account2);
-            await x.SaveChangesAsync();
-        });
+        var client = _fixture.HttpClient.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
 
         // Act
         var response = (await client.PostAsJsonAsync("/accountsReporting", new

@@ -1,10 +1,10 @@
-﻿using CryptoBank.Features.Accounts.Domain;
-using CryptoBank.Features.Accounts.Requests;
+﻿using CryptoBank.Features.Accounts.Requests;
 using CryptoBank.Tests.Integration.Fixtures;
 using CryptoBank.Tests.Integration.Helpers;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace CryptoBank.Tests.Integration.Features.Accounts.Requests;
@@ -25,23 +25,20 @@ public class GetAccountsTests : IAsyncLifetime
     public async Task Should_get_accounts()
     {
         // Arrange
-        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
+        var user = UserHelper.CreateUser($"{Guid.NewGuid()}@test.com", Guid.NewGuid().ToString());
 
-        var account = new Account
-        {
-            Number = "ACC1",
-            Currency = "BTC",
-            Amount = 100,
-            DateOfOpening = DateTime.Now.ToUniversalTime()
-        };
-
-        user.UserAccounts.Add(account);
+        var (account1, account2) = AccountsHelper.CreateAccounts(user, "BTC", 100);
 
         await _fixture.Database.Execute(async x =>
         {
             x.Users.Add(user);
             await x.SaveChangesAsync();
         });
+
+        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
+
+        var client = _fixture.HttpClient.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
 
         // Act
         var response = (await client.GetAsync("/getAccounts"))
@@ -57,12 +54,19 @@ public class GetAccountsTests : IAsyncLifetime
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         });
 
-        var accountContract = contract!.Accounts.Single(x => x.Number == account.Number);
-        accountContract.Number.Should().Be(account.Number);
-        accountContract.Currency.Should().Be(account.Currency);
-        accountContract.Amount.Should().Be(account.Amount);
-        accountContract.DateOfOpening.Date.Should().Be(account.DateOfOpening.Date);
-        accountContract.UserEmail.Should().Be(user.Email);
+        var accountContract1 = contract!.Accounts.Single(x => x.Number == account1.Number);
+        accountContract1!.Number.Should().Be(account1.Number);
+        accountContract1.Currency.Should().Be(account1.Currency);
+        accountContract1.Amount.Should().Be(account1.Amount);
+        accountContract1.DateOfOpening.Date.Should().Be(account1.DateOfOpening.Date);
+        accountContract1.UserEmail.Should().Be(user.Email);
+
+        var accountContract2 = contract!.Accounts.Single(x => x.Number == account2.Number);
+        accountContract2!.Number.Should().Be(account2.Number);
+        accountContract2.Currency.Should().Be(account2.Currency);
+        accountContract2.Amount.Should().Be(account2.Amount);
+        accountContract2.DateOfOpening.Date.Should().Be(account2.DateOfOpening.Date);
+        accountContract2.UserEmail.Should().Be(user.Email);
     }
 
     [Fact]
