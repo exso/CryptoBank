@@ -8,7 +8,6 @@ using CryptoBank.Tests.Integration.Helpers;
 using Microsoft.EntityFrameworkCore;
 using CryptoBank.Errors.Exceptions;
 using CryptoBank.Tests.Integration.Fixtures;
-using System.Net.Http.Headers;
 
 namespace CryptoBank.Tests.Integration.Features.Accounts.Requests;
 
@@ -28,24 +27,19 @@ public class TransferCashTests : IAsyncLifetime
     public async Task Should_transfer_cash()
     {
         // Arrange
-        var user = UserHelper.CreateUser($"{Guid.NewGuid()}@test.com", Guid.NewGuid().ToString());
+        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
 
         var currency = "BTC";
         decimal fromAmount = 1000;
         decimal toAmount = 100;
 
-        var (currentUser, account1, account2) = AccountsHelper.CreateAccounts(user, currency, fromAmount, toAmount);
+        var (account1, account2) = AccountsHelper.CreateAccounts(user.Id, currency, fromAmount, toAmount);
 
         await _fixture.Database.Execute(async x =>
         {
-            x.Users.Add(currentUser);
+            x.Accounts.AddRange(account1, account2);
             await x.SaveChangesAsync();
         });
-
-        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
-
-        var client = _fixture.HttpClient.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
 
         // Act
         var response = (await client.PostAsJsonAsync("/transferCash", new
@@ -75,24 +69,19 @@ public class TransferCashTests : IAsyncLifetime
     public async Task Should_insufficient_amount_in_the_account()
     {
         // Arrange
-        var user = UserHelper.CreateUser($"{Guid.NewGuid()}@test.com", Guid.NewGuid().ToString());
+        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken());
 
         var currency = "BTC";
         decimal fromAmount = 100;
         decimal toAmount = 100;
 
-        var (currentUser, account1, account2) = AccountsHelper.CreateAccounts(user, currency, fromAmount, toAmount);
+        var (account1, account2) = AccountsHelper.CreateAccounts(user.Id, currency, fromAmount, toAmount);
 
         await _fixture.Database.Execute(async x =>
         {
-            x.Users.Add(currentUser);
+            x.Accounts.AddRange(account1, account2);
             await x.SaveChangesAsync();
         });
-
-        var jwt = AuthenticateHelper.GetAccessToken(user, _scope);
-
-        var client = _fixture.HttpClient.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
 
         // Act
         var response = await client.PostAsJsonAsync("/transferCash", new

@@ -1,13 +1,12 @@
 ﻿using CryptoBank.Features.Accounts.Domain;
-using CryptoBank.Features.Management.Domain;
 using FluentAssertions;
 
 namespace CryptoBank.Tests.Integration.Helpers;
 
 public static class AccountsHelper
 {
-    public static (User user, Account account1, Account account2) CreateAccounts(
-        User user,
+    public static (Account account1, Account account2) CreateAccounts(
+        int userId,
         string currency,
         decimal fromAmount,
         decimal toAmount)
@@ -17,7 +16,8 @@ public static class AccountsHelper
             Number = "541e377c-9a38-46a5-a02c-0720dcc4cc2e",
             Currency = currency,
             Amount = fromAmount,
-            DateOfOpening = DateTime.Now.ToUniversalTime()
+            DateOfOpening = DateTime.Now.ToUniversalTime(),
+            UserId = userId
         };
 
         var account2 = new Account
@@ -25,17 +25,15 @@ public static class AccountsHelper
             Number = "a53a4971-2ac7-4f89-9734-84dee9fa1d92",
             Currency = currency,
             Amount = toAmount,
-            DateOfOpening = DateTime.Now.ToUniversalTime()
+            DateOfOpening = DateTime.Now.ToUniversalTime(),
+            UserId = userId
         };
 
-        user.UserAccounts.Add(account1);
-        user.UserAccounts.Add(account2);
-
-        return (user, account1, account2);
+        return (account1, account2);
     }
 
     public static (Account account1, Account account2) CreateAccounts(
-        User user,
+        int userId,
         string currency,
         decimal amount)
     {
@@ -44,7 +42,8 @@ public static class AccountsHelper
             Number = "541e377c-9a38-46a5-a02c-0720dcc4cc2e",
             Currency = currency,
             Amount = amount,
-            DateOfOpening = DateTime.Now.ToUniversalTime()
+            DateOfOpening = DateTime.Now.ToUniversalTime(),
+            UserId = userId
         };
 
         var account2 = new Account
@@ -52,11 +51,9 @@ public static class AccountsHelper
             Number = "a53a4971-2ac7-4f89-9734-84dee9fa1d92",
             Currency = currency,
             Amount = amount,
-            DateOfOpening = DateTime.Now.ToUniversalTime()
+            DateOfOpening = DateTime.Now.ToUniversalTime(),
+            UserId = userId
         };
-
-        user.UserAccounts.Add(account1);
-        user.UserAccounts.Add(account2);
 
         return (account1, account2);
     }

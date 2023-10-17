@@ -35,7 +35,7 @@ public class TokenService : ITokenService
 
         foreach (var role in user.UserRoles)
         {
-            claims.Add(new(ClaimTypes.Role, role.Role.Name));
+            claims.Add(new(ClaimTypes.Role, role.Role!.Name));
         }
            
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Jwt.SigningKey));
