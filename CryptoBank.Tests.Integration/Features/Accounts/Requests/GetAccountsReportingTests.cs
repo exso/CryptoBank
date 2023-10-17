@@ -8,6 +8,7 @@ using CryptoBank.Features.Accounts.Requests;
 using FluentValidation.TestHelper;
 using System.Text.Json;
 using CryptoBank.Tests.Integration.Fixtures;
+using CryptoBank.Features.Management.Domain;
 
 namespace CryptoBank.Tests.Integration.Features.Accounts.Requests;
 
@@ -27,7 +28,9 @@ public class GetAccountsReportingTests : IAsyncLifetime
     public async Task Should_get_accounts_reporting()
     {
         // Arrange
-        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken(), true);
+        var userRole = new UserRole() { Role = new Role { Name = "Analyst", Description = "Аналитик" } };
+
+        var (client, user) = await _fixture.HttpClient.CreateAuthenticatedClient(Create.CancellationToken(), userRole);
 
         var (account1, account2) = AccountsHelper.CreateAccounts(user.Id, "BTC", 100);
 

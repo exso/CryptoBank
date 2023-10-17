@@ -51,11 +51,13 @@ public class HttpClientHarness<TProgram> : IHarness<TProgram>
         return _factory!.CreateClient();
     }
 
-    public async Task<(HttpClient, User user)> CreateAuthenticatedClient(CancellationToken cancellationToken, bool isAnalyst = false)
+    public async Task<(HttpClient, User user)> CreateAuthenticatedClient(
+        CancellationToken cancellationToken, 
+        UserRole? userRole = null)
     {
         ThrowIfNotStarted();
 
-        var user = UserHelper.CreateUser($"{Guid.NewGuid()}@test.com", Guid.NewGuid().ToString(), isAnalyst);
+        var user = UserHelper.CreateUser($"{Guid.NewGuid()}@test.com", Guid.NewGuid().ToString(), userRole);
 
         await _databaseHarness.Execute(async context =>
         {

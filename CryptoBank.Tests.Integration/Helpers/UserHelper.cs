@@ -4,7 +4,7 @@ namespace CryptoBank.Tests.Integration.Helpers;
 
 public class UserHelper
 {
-    public static User CreateUser(string email, string password, bool isAnalyst = false)
+    public static User CreateUser(string email, string password, UserRole? userRole = null)
     {
         var user = new User
         {
@@ -24,9 +24,9 @@ public class UserHelper
             }
         };
 
-        if (isAnalyst)
+        if (userRole is not null)
         {
-            user.UserRoles.Add(new() { Role = new Role { Name = "Analyst", Description = "Аналитик" } });
+            user.UserRoles.Add(userRole);
         }
 
         return user;
