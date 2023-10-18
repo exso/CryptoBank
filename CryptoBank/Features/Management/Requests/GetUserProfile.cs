@@ -64,7 +64,7 @@ public static class GetUserProfile
                     x.Email, 
                     x.DateOfBirth, 
                     x.DateOfRegistration, 
-                    x.UserRoles.Select(x => x.Role.Name).ToArray()
+                    x.UserRoles.Select(x => x.Role!.Name).ToArray()
                 ))
                 .SingleOrDefaultAsync(cancellationToken);
 

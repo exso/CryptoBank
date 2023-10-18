@@ -17,7 +17,7 @@ namespace CryptoBank.Database.Configuration.Management
 
             builder.Property(e => e.Email)
                 .IsRequired()
-                .HasMaxLength(20)
+                .HasMaxLength(50)
                 .HasColumnName("email");
 
             builder.Property(e => e.Password)

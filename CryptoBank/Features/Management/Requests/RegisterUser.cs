@@ -102,7 +102,7 @@ public static class RegisterUser
         private async Task<string> DefineRole(string email, CancellationToken cancellationToken)
         {
             var existingAdmin = await _context.UserRoles
-                .AnyAsync(x => x.Role.Name.Equals(Roles.Administrator), cancellationToken);
+                .AnyAsync(x => x.Role!.Name.Equals(Roles.Administrator), cancellationToken);
 
             if (!existingAdmin && _managmentOptions.AdministratorEmail.Contains(email))
             {

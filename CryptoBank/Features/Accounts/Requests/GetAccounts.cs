@@ -57,7 +57,7 @@ public static class GetAccounts
                     Currency = x.Currency,
                     Amount = x.Amount,
                     DateOfOpening = x.DateOfOpening,
-                    UserEmail = x.User.Email
+                    UserEmail = x.User!.Email
                 })
                 .ToArrayAsync(cancellationToken);
 

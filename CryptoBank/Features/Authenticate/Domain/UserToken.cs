@@ -16,6 +16,6 @@ public class UserToken
     public bool IsRevoked => Revoked is not null;
     public bool IsActive => !IsExpired && !IsRevoked;
 
-    public User User { get; set; } = new User();
+    public User? User { get; set; } //= new User();
     public UserToken? RefreshToken { get; set; }
 }
