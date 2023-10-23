@@ -3,6 +3,7 @@ using CryptoBank.Database;
 using CryptoBank.Features.Management.Domain;
 using CryptoBank.Features.Management.Options;
 using CryptoBank.Pipeline;
+using CryptoBank.Validation;
 using FastEndpoints;
 using FluentValidation;
 using MediatR;
@@ -10,6 +11,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Net;
+
+using static CryptoBank.Features.Management.Errors.Codes.UserProfileValidationErrors;
 
 namespace CryptoBank.Features.Management.Requests;
 
@@ -46,17 +49,15 @@ public static class RegisterUser
         public RequestValidator(Context context)
         {
             RuleFor(x => x.LowercaseEmail)
-                .NotEmpty()
-                .MinimumLength(5)
-                .MaximumLength(20)
-                .EmailAddress()
+                .NotEmpty().WithErrorCode(EmailRequired)
+                .ValidLength()
+                .EmailAddress().WithErrorCode(InvalidСredentials)
                 .MustAsync(async (x, cancellationToken) => !await BeUniqueAsync(x, context, cancellationToken))
-                .WithMessage(x => $"User {x.LowercaseEmail} exists");
+                .WithErrorCode(InvalidСredentials);
 
             RuleFor(x => x.Password)
-                .NotEmpty()
-                .MinimumLength(5)
-                .MaximumLength(20);
+                .NotEmpty().WithErrorCode(PasswordRequired)
+                .ValidLength();
         }
 
         private static async Task<bool> BeUniqueAsync(string email, Context context, CancellationToken cancellationToken)

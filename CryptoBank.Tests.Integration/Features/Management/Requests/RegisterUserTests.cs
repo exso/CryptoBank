@@ -125,7 +125,7 @@ public class RegisterValidatorTests : IAsyncLifetime
     {
         var result = await _validator.TestValidateAsync(
             new RegisterUser.Request(email, "password", new DateTime(2000, 01, 31).ToUniversalTime()));
-        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("NotEmptyValidator");
+        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("user_profile_validation_email_required");
     }
 
     [Theory]
@@ -136,7 +136,7 @@ public class RegisterValidatorTests : IAsyncLifetime
     {
         var result = await _validator.TestValidateAsync(new
             RegisterUser.Request(email, "password", new DateTime(2000, 01, 31).ToUniversalTime()));
-        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("EmailValidator");
+        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("user_profile_validation_invalid_credentials");
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public class RegisterValidatorTests : IAsyncLifetime
 
         var result = await _validator.TestValidateAsync(new
             RegisterUser.Request(email, "password", new DateTime(2000, 01, 31).ToUniversalTime()));
-        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("AsyncPredicateValidator");
+        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("user_profile_validation_invalid_credentials");
     }
 
     [Theory]
@@ -171,7 +171,7 @@ public class RegisterValidatorTests : IAsyncLifetime
     {
         var result = await _validator.TestValidateAsync(
             new RegisterUser.Request(email, "123456", new DateTime(2000, 01, 31).ToUniversalTime()));
-        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("MinimumLengthValidator");
+        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("user_profile_validation_minimum_length");
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public class RegisterValidatorTests : IAsyncLifetime
 
         var result = await _validator.TestValidateAsync(
             new RegisterUser.Request(email, "123456", new DateTime(2000, 01, 31).ToUniversalTime()));
-        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("MaximumLengthValidator");
+        result.ShouldHaveValidationErrorFor(x => x.LowercaseEmail).WithErrorCode("user_profile_validation_maximum_length");
     }
 
     [Theory]
@@ -192,7 +192,7 @@ public class RegisterValidatorTests : IAsyncLifetime
     {
         var result = await _validator.TestValidateAsync(
             new RegisterUser.Request("test@test.com", password, new DateTime(2000, 01, 31).ToUniversalTime()));
-        result.ShouldHaveValidationErrorFor(x => x.Password).WithErrorCode("NotEmptyValidator");
+        result.ShouldHaveValidationErrorFor(x => x.Password).WithErrorCode("user_profile_validation_password_required");
     }
 
     [Theory]
@@ -203,7 +203,7 @@ public class RegisterValidatorTests : IAsyncLifetime
     {
         var result = await _validator.TestValidateAsync(
             new RegisterUser.Request("test@test.com", password, new DateTime(2000, 01, 31).ToUniversalTime()));
-        result.ShouldHaveValidationErrorFor(x => x.Password).WithErrorCode("MinimumLengthValidator");
+        result.ShouldHaveValidationErrorFor(x => x.Password).WithErrorCode("user_profile_validation_minimum_length");
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class RegisterValidatorTests : IAsyncLifetime
 
         var result = await _validator.TestValidateAsync(
             new RegisterUser.Request("test@test.com", password, new DateTime(2000, 01, 31).ToUniversalTime()));
-        result.ShouldHaveValidationErrorFor(x => x.Password).WithErrorCode("MaximumLengthValidator");
+        result.ShouldHaveValidationErrorFor(x => x.Password).WithErrorCode("user_profile_validation_maximum_length");
     }
 
     public async Task InitializeAsync()
