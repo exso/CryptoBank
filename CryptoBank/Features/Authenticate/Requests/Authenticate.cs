@@ -48,15 +48,15 @@ public static class Authenticate
 
     public class RequestValidator : AbstractValidator<Request>
     {
-        public RequestValidator(Context context)
+        public RequestValidator(/*Context context*/)
         {
             RuleFor(x => x.LowercaseEmail)
                 .NotEmpty().WithErrorCode(EmailRequired)
                 .MinimumLength(5)
                 .MaximumLength(20)
-                .EmailAddress().WithErrorCode(InvalidСredentials)
-                .MustAsync(async (email, cancellationToken) => await EmailExistsAsync(email, context, cancellationToken))
-                .WithErrorCode(InvalidСredentials);
+                .EmailAddress().WithErrorCode(InvalidСredentials);
+                //.MustAsync(async (email, cancellationToken) => !await EmailExistsAsync(email, context, cancellationToken))
+                //.WithErrorCode(InvalidСredentials);
 
             RuleFor(x => x.Password)
                 .NotEmpty().WithErrorCode(PasswordRequired)
@@ -64,8 +64,8 @@ public static class Authenticate
                 .MaximumLength(20);
         }
 
-        private static async Task<bool> EmailExistsAsync(string email, Context context, CancellationToken cancellationToken) =>
-            await context.Users.AnyAsync(x => x.Email.Equals(email), cancellationToken);
+        //private static async Task<bool> EmailExistsAsync(string email, Context context, CancellationToken cancellationToken) =>
+        //    await context.Users.AnyAsync(x => x.Email.Equals(email), cancellationToken);
     }
 
     public class RequestHandler : IRequestHandler<Request, Response>
@@ -89,8 +89,9 @@ public static class Authenticate
             var user = await _context.Users
                 .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
-                .SingleAsync(x => x.Email == request.LowercaseEmail, cancellationToken);
-
+                .SingleOrDefaultAsync(x => x.Email == request.LowercaseEmail, cancellationToken) 
+                    ?? throw new ValidationErrorsException($"{nameof(request.LowercaseEmail)}", "Invalid credentials", InvalidСredentials);
+            
             var passwordHash = _passwordHasher.VerifyHashedPassword(user.Password, request.Password);
 
             if (!passwordHash)
