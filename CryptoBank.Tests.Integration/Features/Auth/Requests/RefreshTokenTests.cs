@@ -69,6 +69,13 @@ public class RefreshTokenTests : IAsyncLifetime
 
         userToken.Should().NotBeNull();
         userToken!.UserId.Should().Be(user.Id);
+
+        var oldToken = await _fixture.Database.Execute(async x =>
+            await x.UserTokens.SingleOrDefaultAsync(u => u.ReplacedByTokenId == userToken.Id));
+
+        oldToken!.IsActive.Should().BeFalse();
+        oldToken.Revoked.Should().NotBeNull();
+        oldToken.ReasonRevoked.Should().Be("Replaced token");
     }
 
     [Fact]
@@ -134,6 +141,72 @@ public class RefreshTokenTests : IAsyncLifetime
 
         var error = validationProblemDetails!.Errors.Single();
         error.Code.Should().Be("authenticate_validation_invalid_token");
+    }
+
+    [Fact]
+    public async Task Should_return_revoked_tokens_if_refresh_token_not_active()
+    {
+        // Arrange
+        var passwordHasher = _scope.ServiceProvider.GetRequiredService<Argon2IdPasswordHasher>();
+
+        var user = UserHelper.CreateUser("test@test.com", passwordHasher.HashPassword("qwerty123456A!"));
+
+        await _fixture.Database.Execute(async x =>
+        {
+            x.Users.Add(user);
+            await x.SaveChangesAsync();
+        });
+
+        var userToken1 = new UserToken
+        {
+            UserId = user.Id,
+            Token = "test",
+            Revoked = DateTime.UtcNow.ToUniversalTime(),
+            Expires = DateTime.UtcNow.AddDays(-2).ToUniversalTime(),
+            Created = DateTime.UtcNow.AddDays(-5).ToUniversalTime(),
+        };
+
+        var userToken2 = new UserToken
+        {
+            UserId = user.Id,
+            Token = "test2",
+            Expires = DateTime.UtcNow.AddDays(2).ToUniversalTime(),
+            Created = DateTime.UtcNow.ToUniversalTime(),
+        };
+
+        await _fixture.Database.Execute(async x =>
+        {
+            x.UserTokens.AddRange(userToken1, userToken2);
+            await x.SaveChangesAsync();
+        });
+
+        var client = _fixture.HttpClient.CreateClient();
+
+        var message = new HttpRequestMessage(HttpMethod.Get, "/refreshToken");
+        message.Headers.Add("Cookie", $"refresh-token={userToken1.Token}");
+
+        // Act
+        var response = await client.SendAsync(message);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var validationProblemDetails = await response.Content.ReadFromJsonAsync<ValidationProblemDetailsContract>();
+        validationProblemDetails.Should().NotBeNull();
+
+        var error = validationProblemDetails!.Errors.Single();
+        error.Code.Should().Be("authenticate_validation_invalid_token");
+
+        var userTokenContract1 = await _fixture.Database.Execute(async x =>
+            await x.UserTokens.SingleAsync(x => x.Token == userToken1.Token));
+
+        var userTokenContract2 = await _fixture.Database.Execute(async x =>
+            await x.UserTokens.SingleAsync(x => x.Token == userToken2.Token));
+
+        userTokenContract1.Revoked.Should().NotBeNull();
+        userTokenContract1.ReasonRevoked.Should().Be("Invalid token");
+        userTokenContract2.ReasonRevoked.Should().Be("Invalid token");
+        userTokenContract2.Revoked.Should().NotBeNull();
     }
 
     public async Task InitializeAsync()
