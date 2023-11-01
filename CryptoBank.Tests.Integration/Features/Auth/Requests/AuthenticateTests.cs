@@ -16,7 +16,7 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
 
-namespace CryptoBank.Tests.Integration.Features.Auth;
+namespace CryptoBank.Tests.Integration.Features.Auth.Requests;
 
 [Collection(AuthTestsCollection.Name)]
 public class AuthenticateTests : IAsyncLifetime
@@ -139,7 +139,7 @@ public class AuthenticateTests : IAsyncLifetime
 }
 
 [Collection(AuthTestsCollection.Name)]
-public class AuthenticateValidatorTests 
+public class AuthenticateValidatorTests
 {
     private readonly Authenticate.RequestValidator _validator = new();
 

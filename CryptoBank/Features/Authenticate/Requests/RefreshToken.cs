@@ -60,21 +60,33 @@ public static class RefreshToken
 
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
         {
-            await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
-
             var user = await FindUser(request.RefreshToken, cancellationToken);
 
-            await CheckRefreshToken(user.Id, request.RefreshToken, cancellationToken);
-
-            var accessToken = _tokenService.GetAccessToken(user);
+            var currentRefreshToken = await _context.UserTokens
+                .SingleAsync(x => x.Token == request.RefreshToken, cancellationToken);
 
             var newRefreshToken = _tokenService.GetRefreshToken();
 
-            await SaveRefreshToken(user, newRefreshToken, cancellationToken);
+            await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
 
-            await RotateRefreshToken(request.RefreshToken, newRefreshToken.Id);
+            if (!currentRefreshToken.IsActive)
+            {
+                await _tokenService.RevokeRefreshTokens(user.Id, cancellationToken);
+
+                await tx.CommitAsync(cancellationToken);
+
+                throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
+            }
+            else
+            {
+                await SaveRefreshToken(user, newRefreshToken, cancellationToken);
+
+                await RotateRefreshToken(request.RefreshToken, newRefreshToken.Id);
+            }
 
             await tx.CommitAsync(cancellationToken);
+
+            var accessToken = _tokenService.GetAccessToken(user);
 
             return new Response(accessToken, newRefreshToken.Token);
         }
@@ -87,27 +99,6 @@ public static class RefreshToken
                 .SingleAsync(x => x.UserTokens.Any(t => t.Token == refreshToken), cancellationToken);
 
             return user;
-        }
-
-        private async Task CheckRefreshToken(int userId, string refreshToken, CancellationToken cancellationToken)
-        {
-            var currentRefreshToken = await _context.UserTokens
-                .SingleAsync(x => x.Token == refreshToken, cancellationToken);
-
-            if (currentRefreshToken.IsRevoked)
-            {
-                await _tokenService.RevokeRefreshTokens(userId, cancellationToken);
-            }
-
-            if (!currentRefreshToken.IsActive)
-            {
-                throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
-            }
-
-            if (currentRefreshToken.Expires <= DateTime.UtcNow)
-            {
-                throw new ValidationErrorsException(string.Empty, "Invalid token", InvalidToken);
-            }
         }
 
         private async Task SaveRefreshToken(
