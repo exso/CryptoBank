@@ -14,4 +14,13 @@ public class DepositAddress
     public Currency? Currency { get; set; }
     public User? User { get; set; }
     public Xpub? Xpub { get; set; }
+
+    public DepositAddress(int currencyId, int userId, int xpubId, int derivationIndex, string cryptoAddress)
+    {
+        CurrencyId = currencyId;
+        UserId = userId;
+        XpubId = xpubId;
+        DerivationIndex = derivationIndex;
+        CryptoAddress = cryptoAddress;
+    }
 }

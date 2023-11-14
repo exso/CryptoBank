@@ -17,7 +17,7 @@ public sealed class VariableConfiguration : IEntityTypeConfiguration<Variable>
 
         builder.Property(e => e.Key)
             .IsRequired()
-            .HasMaxLength(10)
+            .HasMaxLength(20)
             .HasColumnName("key");
 
         builder.Property(e => e.Value)
