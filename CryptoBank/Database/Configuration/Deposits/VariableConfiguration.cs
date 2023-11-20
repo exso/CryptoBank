@@ -9,11 +9,10 @@ public sealed class VariableConfiguration : IEntityTypeConfiguration<Variable>
     public void Configure(EntityTypeBuilder<Variable> builder)
     {
         builder.ToTable("variables");
-        builder.HasKey(x => x.Id);
+        builder.HasKey(x => x.Key);
 
-        builder.Property(e => e.Id)
-            .HasColumnName("id")
-            .UseIdentityColumn();
+        builder.HasIndex(e => e.Key)
+            .IsUnique();
 
         builder.Property(e => e.Key)
             .IsRequired()

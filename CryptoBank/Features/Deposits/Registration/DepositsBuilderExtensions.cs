@@ -1,5 +1,6 @@
 ﻿using CryptoBank.Features.Deposits.Jobs;
 using CryptoBank.Features.Deposits.Options;
+using CryptoBank.Features.Deposits.Services;
 
 namespace CryptoBank.Features.Deposits.Registration;
 
@@ -12,8 +13,9 @@ public static class DepositsBuilderExtensions
         builder.Services.AddHostedService<CurrencySeeder>();
         builder.Services.AddHostedService<VariableSeeder>();
 
-        //TODO Важно чтобы XpubSeeder выполнялся после CurrencySeeder
+        //Важно чтобы XpubSeeder выполнялся после CurrencySeeder
         builder.Services.AddHostedService<XpubSeeder>();
+        builder.Services.AddTransient<BitcoinNetworkService>();
 
         return builder;
     }

@@ -16,6 +16,7 @@ public sealed class XpubConfiguration : IEntityTypeConfiguration<Xpub>
             .UseIdentityColumn();
 
         builder.Property(e => e.CurrencyId)
+            .IsRequired()
             .HasColumnName("currency_id");
 
         builder.Property(e => e.Value)

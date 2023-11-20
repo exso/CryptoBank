@@ -1,23 +1,18 @@
 ﻿using CryptoBank.Database;
 using CryptoBank.Features.Deposits.Domain;
-using CryptoBank.Features.Deposits.Options;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace CryptoBank.Features.Deposits.Jobs;
 
 public class VariableSeeder : IHostedService
 {
     private readonly ILogger<VariableSeeder> _logger;
-    private readonly DepositsOptions _depositsOptions;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
     public VariableSeeder(
-        IOptions<DepositsOptions> depositsOptions,
         ILogger<VariableSeeder> logger,
         IServiceScopeFactory serviceScopeFactory)
     {
-        _depositsOptions = depositsOptions.Value;
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
     }
@@ -35,7 +30,7 @@ public class VariableSeeder : IHostedService
 
         var variable = new Variable
         {
-            Key = _depositsOptions.DerivationIndex,
+            Key = DerivationIndex.Key,
             Value = 1
         };
 

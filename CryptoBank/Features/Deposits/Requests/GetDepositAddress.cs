@@ -3,6 +3,7 @@ using CryptoBank.Database;
 using CryptoBank.Errors.Exceptions;
 using CryptoBank.Features.Deposits.Domain;
 using CryptoBank.Features.Deposits.Options;
+using CryptoBank.Features.Deposits.Services;
 using CryptoBank.Pipeline;
 using FastEndpoints;
 using FluentValidation;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using NBitcoin;
+using System.Data;
 
 using static CryptoBank.Features.Deposits.Errors.Codes.DepositsLogicConflictErrors;
 
@@ -18,7 +20,7 @@ namespace CryptoBank.Features.Deposits.Requests;
 
 public static class GetDepositAddress
 {
-    [HttpGet("/getDepositAddress")]
+    [HttpPost("/getDepositAddress")]
     [Authorize]
     public class Endpoint : EndpointWithoutRequest<Response>
     {
@@ -51,16 +53,21 @@ public static class GetDepositAddress
     public class RequestHandler : IRequestHandler<Request, Response>
     {
         private readonly Context _context;
-        private readonly DepositsOptions _depositsOptions;
+        private readonly BitcoinNetworkService _bitcoinNetworkService;
 
-        public RequestHandler(Context context, IOptions<DepositsOptions> depositsOptions)
+        public RequestHandler(
+            Context context, 
+            BitcoinNetworkService bitcoinNetworkService)
         {
             _context = context;
-            _depositsOptions = depositsOptions.Value;
+            _bitcoinNetworkService = bitcoinNetworkService;
         }
 
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
         {
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead,
+                cancellationToken);
+
             var currency = await _context.Currencies
                 .SingleOrDefaultAsync(x => x.Code == request.CurrencyCode, cancellationToken)
                     ?? throw new LogicConflictException("Currency not exist", CurrencyNotExist);
@@ -78,13 +85,11 @@ public static class GetDepositAddress
                     ?? throw new LogicConflictException("Xpub not exist", XpubNotExist);
 
             var lastDerivationIndex = await _context.Variables
-                .SingleOrDefaultAsync(x => x.Key == _depositsOptions.DerivationIndex, cancellationToken)
+                .SingleOrDefaultAsync(x => x.Key == DerivationIndex.Key, cancellationToken)
                     ?? throw new LogicConflictException("Derivation index not exist", DerivationIndexNotExist);
 
-            await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
-
             await _context.Variables
-                .Where(x => x.Key == _depositsOptions.DerivationIndex)
+                .Where(x => x.Key == DerivationIndex.Key)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.Value, lastDerivationIndex.Value + 1), cancellationToken);
 
@@ -114,7 +119,7 @@ public static class GetDepositAddress
 
         private string GenerateCryptoAddress(Xpub xpub, int derivationIndex)
         {
-            var network = GetNetwork();
+            var network = _bitcoinNetworkService.GetNetwork();
 
             var extPubKey = ExtPubKey.Parse(xpub.Value, network).Derive(0, false);
             var derivedPubKey = extPubKey.Derive(derivationIndex, false).PubKey;
@@ -122,18 +127,6 @@ public static class GetDepositAddress
             var cryptoAddress = derivedPubKey.GetAddress(ScriptPubKeyType.Segwit, network).ToString();
 
             return cryptoAddress;
-        }
-
-        [Obsolete("TODO дубль, переместить в сервисы")]
-        private Network GetNetwork()
-        {
-            return _depositsOptions.BitcoinNetwork switch
-            {
-                BitcoinNetwork.MainNet => Network.Main,
-                BitcoinNetwork.TestNet => Network.TestNet,
-                BitcoinNetwork.RegTest => Network.RegTest,
-                _ => throw new ArgumentOutOfRangeException(nameof(_depositsOptions.BitcoinNetwork)),
-            };
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using CryptoBank.Database;
 using CryptoBank.Features.Deposits.Domain;
 using CryptoBank.Features.Deposits.Options;
+using CryptoBank.Features.Deposits.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using NBitcoin;
@@ -12,15 +13,18 @@ public class XpubSeeder : IHostedService
     private readonly ILogger<XpubSeeder> _logger;
     private readonly DepositsOptions _depositsOptions;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly BitcoinNetworkService _bitcoinNetworkService;
 
     public XpubSeeder(
         IOptions<DepositsOptions> depositsOptions,
         ILogger<XpubSeeder> logger,
-        IServiceScopeFactory serviceScopeFactory)
+        IServiceScopeFactory serviceScopeFactory,
+        BitcoinNetworkService bitcoinNetworkService)
     {
         _depositsOptions = depositsOptions.Value;
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
+        _bitcoinNetworkService = bitcoinNetworkService;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -58,30 +62,13 @@ public class XpubSeeder : IHostedService
 
     private string GenerateMasterPubKey()
     {
-        var network = GetNetwork();
+        var network = _bitcoinNetworkService.GetNetwork();
 
         ExtKey masterKey = new();
-        var masterPrvKey = masterKey.ToString(network);
-
-        _logger.LogInformation("Private key: {masterPrvKey}", masterPrvKey);
 
         ExtPubKey masterPubKey = masterKey.Neuter();
         var masterPubkey = masterPubKey.ToString(network);
 
-        _logger.LogInformation("Public key: {masterPubkey}", masterPubkey);
-
         return masterPubkey;
-    }
-
-    [Obsolete("TODO дубль, переместить в сервисы")]
-    private Network GetNetwork()
-    {
-        return _depositsOptions.BitcoinNetwork switch
-        {
-            BitcoinNetwork.MainNet => Network.Main,
-            BitcoinNetwork.TestNet => Network.TestNet,
-            BitcoinNetwork.RegTest => Network.RegTest,
-            _ => throw new ArgumentOutOfRangeException(nameof(_depositsOptions.BitcoinNetwork)),
-        };
     }
 }

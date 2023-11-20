@@ -16,17 +16,23 @@ public sealed class DepositAddressConfiguration : IEntityTypeConfiguration<Depos
             .UseIdentityColumn();
 
         builder.Property(e => e.CurrencyId)
+            .IsRequired()
             .HasColumnName("currency_id");
 
         builder.Property(e => e.UserId)
+            .IsRequired()
             .HasColumnName("user_id");
 
         builder.Property(e => e.XpubId)
+            .IsRequired()
             .HasColumnName("xpub_id");
 
         builder.Property(e => e.DerivationIndex)
             .IsRequired()
             .HasColumnName("derivation_index");
+
+        builder.HasIndex(e => e.CryptoAddress)
+            .IsUnique();
 
         builder.Property(e => e.CryptoAddress)
             .IsRequired()
