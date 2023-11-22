@@ -16,4 +16,5 @@ public class User
     public ICollection<UserToken> UserTokens { get; set; } = new HashSet<UserToken>();
     public ICollection<Account> UserAccounts { get; set; } = new HashSet<Account>();
     public ICollection<DepositAddress> DepositAddresses { get; set; } = new HashSet<DepositAddress>();
+    public ICollection<CryptoDeposit> CryptoDeposits { get; set; } = new HashSet<CryptoDeposit>();
 }

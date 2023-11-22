@@ -8,4 +8,5 @@ public class Currency
 
     public ICollection<DepositAddress> DepositAddresses { get; set; } = new HashSet<DepositAddress>();
     public ICollection<Xpub> Xpubs { get; set; } = new HashSet<Xpub>();
+    public ICollection<CryptoDeposit> CryptoDeposits { get; set; } = new HashSet<CryptoDeposit>();
 }

@@ -19,6 +19,7 @@ public class Context : DbContext
     public DbSet<Xpub> Xpubs { get; set; }
     public DbSet<DepositAddress> DepositAddresses { get; set; }
     public DbSet<Variable> Variables { get; set; }
+    public DbSet<CryptoDeposit> CryptoDeposits { get; set; }
 
     public Context(DbContextOptions<Context> options) : base(options)
     {
