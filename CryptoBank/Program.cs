@@ -6,6 +6,7 @@ using CryptoBank.Database.Registration;
 using CryptoBank.Errors;
 using CryptoBank.Features.Accounts.Registration;
 using CryptoBank.Features.Authenticate.Registration;
+using CryptoBank.Features.Deposits.Registration;
 using CryptoBank.Features.Management.Domain;
 using CryptoBank.Features.Management.Registration;
 using CryptoBank.Features.News.Registration;
@@ -41,6 +42,7 @@ builder.AddNews();
 builder.AddManagement();
 builder.AddAuthenticate();
 builder.AddAccounts();
+builder.AddDeposits();
 
 builder.Services.AddSingleton<IAuthorizationHandler, RoleRequirementHandler>();
 

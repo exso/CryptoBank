@@ -3,6 +3,7 @@ using System;
 using CryptoBank.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CryptoBank.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20231114200715_VariableKeyLength20")]
+    partial class VariableKeyLength20
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -165,9 +168,6 @@ namespace CryptoBank.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CryptoAddress")
-                        .IsUnique();
-
                     b.HasIndex("CurrencyId");
 
                     b.HasIndex("UserId");
@@ -179,7 +179,15 @@ namespace CryptoBank.Migrations
 
             modelBuilder.Entity("CryptoBank.Features.Deposits.Domain.Variable", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<string>("Key")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("key");
@@ -188,10 +196,7 @@ namespace CryptoBank.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("value");
 
-                    b.HasKey("Key");
-
-                    b.HasIndex("Key")
-                        .IsUnique();
+                    b.HasKey("Id");
 
                     b.ToTable("variables", "public");
                 });
