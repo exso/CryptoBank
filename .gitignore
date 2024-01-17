@@ -475,3 +475,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
