@@ -8,5 +8,5 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ./infra/:/src/
-      - /Users/acer/.ssh:/root/.ssh
+      - /mnt/d/App/CryptoBank/infra:/src/
+      - /mnt/c/Users/user/.ssh:/root/.ssh
