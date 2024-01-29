@@ -1,0 +1,12 @@
+version: "3.8"
+
+name: "infra"
+
+services:
+  client: 
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /mnt/d/App/CryptoBank/infra:/src/
+      - /mnt/c/Users/user/.ssh:/root/.ssh

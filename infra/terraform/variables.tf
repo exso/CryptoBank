@@ -5,5 +5,5 @@ variable "hcloud_token" {
 
 variable "ssh_key_fingerprint" {
   type = string
-  default = "d7:d6:8f:54:a0:ac:43:2e:83:77:7d:90:fd:a1:3a:84"
+  default = "96:9d:48:44:48:d5:4e:45:91:c2:bc:1c:e8:3f:27:bf"
 }
