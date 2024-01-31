@@ -1,3 +1,32 @@
+- name: Setup backend
+  hosts: backend
+  vars:
+    docker_compose_dir: /srv/cryptobank-webapi
+
+  tasks:
+  - name: Add Docker GPG apt Key
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+
+  - name: Add Docker repository
+    apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu focal stable
+
+  - name: Update apt and install docker-ce
+    apt:
+      name: docker-ce
+      update_cache: true
+
+  - name: Create docker compose directory
+    file:
+      path: "{{ docker_compose_dir }}"
+      state: directory
+
+  - name: Install docker compose config
+    template:
+      src: templates/docker-compose.yml.j2
+      dest: "{{ docker_compose_dir }}/docker-compose.yml"
+
 - name: Setup PostgreSQL
   hosts: database
   vars:
