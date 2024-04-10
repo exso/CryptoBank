@@ -18,6 +18,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
+const string corsPolicyName = "CorsPolicy";
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<Context>(options =>
@@ -53,7 +55,17 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PolicyNames.UserRole, policy => policy.AddRequirements(new RoleRequirement(Roles.User)));
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: corsPolicyName, policy => policy
+        .WithOrigins("http://localhost:3000")
+        .WithMethods("GET", "PUT")
+        .AllowAnyHeader());
+});
+
 var app = builder.Build();
+
+app.UseCors(corsPolicyName);
 
 if (app.Environment.IsDevelopment())
 {
